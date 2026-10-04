@@ -3,9 +3,8 @@ const $ = id => document.getElementById(id);
 const IH = 46;                        // 다이얼 한 칸 높이(px)
 const RC = 2 * Math.PI * 80;          // 링 둘레
 const send = m => chrome.runtime.sendMessage(m);
-const ceilMin = ms => Math.ceil(ms / 60000) * 60000;
 
-let timer = null, sw = { ...EMPTY_SW }, tab = 'timer';
+let timer = null, sw = { ...EMPTY_SW }, tab = 'timer', settingsOpen = false;
 
 /* ---------- 다이얼: 끝나는 시각(오전/오후 · 시 · 분) ----------
    휠: 큰 신호(마우스 한 칸)는 1줄. 칸 사이가 짧으면(빨리 돌림) 1·2·3줄로 가속하고, 멈추면 몇 줄 더 미끄러진다.
@@ -20,8 +19,10 @@ function makeWheel(el, items, onChange) {
   el.classList.add('drag');
   el.innerHTML = items.map(v => `<div>${v}</div>`).join('');
   const n = items.length, clamp = i => Math.max(0, Math.min(n - 1, i));
-  let idx = 0, acc = 0, streak = 0, lastT = 0, lastDir = 0, glideT = 0, drag = null;
-  const go = (i, smooth) => el.scrollTo({ top: i * IH, behavior: smooth ? 'smooth' : 'auto' });
+  let idx = 0, acc = 0, streak = 0, lastT = 0, lastDir = 0, glideT = 0, drag = null, lit = -1;
+  // 가운데 줄 글자를 코랄로(H1)
+  const mark = i => { if (i === lit) return; el.children[lit]?.classList.remove('on'); el.children[i]?.classList.add('on'); lit = i; };
+  const go = (i, smooth) => { mark(i); el.scrollTo({ top: i * IH, behavior: smooth ? 'smooth' : 'auto' }); };
   function move(i) {
     i = clamp(i);
     if (i === idx) { go(idx, true); return; }
@@ -52,6 +53,7 @@ function makeWheel(el, items, onChange) {
     const dy = e.clientY - drag.y0;
     drag.moved = Math.max(drag.moved, Math.abs(dy));
     el.scrollTop = Math.max(0, Math.min((n - 1) * IH, drag.top0 - dy));
+    mark(Math.round(el.scrollTop / IH));
     const t = performance.now();
     if (t > drag.lt) { drag.v = (e.clientY - drag.ly) / (t - drag.lt); drag.ly = e.clientY; drag.lt = t; }
   });
@@ -90,11 +92,11 @@ function setWheels(d, smooth) {
   wH.set((d.getHours() % 12 || 12) - 1, smooth);
   wM.set(d.getMinutes(), smooth);
 }
-// 칩: 지금부터 N분 뒤를 분 단위로 올림 → 칩에 적힌 것보다 짧게 울리지 않는다
+// 칩: 다이얼에 보이는 시각에 N분을 더한다(누를수록 쌓임). 실제 남은 시간은 최대 59초 짧을 수 있다
 document.querySelector('.chips').addEventListener('click', e => {
   const b = e.target.closest('[data-p]');
   if (!b) return;
-  setWheels(new Date(ceilMin(Date.now() + b.dataset.p * 1000)), true);
+  setWheels(new Date(wheelTarget().d.getTime() + b.dataset.p * 1000), true);
   touch();
 });
 
@@ -107,9 +109,14 @@ function wheelTarget() {
   return { d, tomorrow };
 }
 
+// 다이얼을 지금 시각으로 되돌리기(처음 연 상태와 같게)
+$('rz').onclick = () => { touched = false; setWheels(new Date(), true); renderEndline(); };
+
 function renderEndline() {
+  $('rz').classList.toggle('off', !touched);
+  $('rz').tabIndex = touched ? 0 : -1;
   if (!touched) {
-    $('endline').textContent = '다이얼을 돌려 끝나는 시각을 정해 주세요';
+    $('endline').textContent = '';
     $('go').disabled = true;
     return;
   }
@@ -124,19 +131,22 @@ function start() {
 }
 $('go').onclick = start;
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && tab === 'timer' && !timer && !e.target.closest('button')) { e.preventDefault(); start(); }
+  if (e.key === 'Enter' && !settingsOpen && tab === 'timer' && !timer && !e.target.closest('button, input')) { e.preventDefault(); start(); }
 });
 
 /* ---------- 탭 ---------- */
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; renderPanes(); });
-$('opts').onclick = () => chrome.runtime.openOptionsPage();
+$('opts').onclick = () => { settingsOpen = true; renderPanes(); };
+$('back').onclick = () => { settingsOpen = false; renderPanes(); };
 
 function renderPanes() {
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
-  const setup = tab === 'timer' && !timer;
+  const main = !settingsOpen, setup = main && tab === 'timer' && !timer;
+  $('head').hidden = !main;
+  $('sethead').hidden = $('set').hidden = main;
   $('setup').hidden = !setup;
-  $('run').hidden = !(tab === 'timer' && timer);
-  $('sw').hidden = tab !== 'sw';
+  $('run').hidden = !(main && tab === 'timer' && timer);
+  $('sw').hidden = !(main && tab === 'sw');
   // 설정 화면에서는 다이얼이 곧 지금 시각이라 위쪽 시계는 숨긴다
   document.querySelector('.now').style.visibility = setup ? 'hidden' : '';
   document.body.classList.toggle('done', timer?.status === 'done');
@@ -192,6 +202,42 @@ function renderSwStatic() {
   $('swgo').textContent = sw.on ? '정지' : sw.acc ? '계속' : '시작';
   $('laps').innerHTML = sw.laps.map((t, i) => `<li><span>랩 ${i + 1}</span><span>${fmtMs(t)}</span></li>`).reverse().join('');
 }
+
+/* ---------- 설정(팝업 안) ----------
+   바꾸는 즉시 저장한다. 메뉴 시간이 바뀌면 백그라운드가 우클릭 메뉴를 다시 만든다.
+   화면 색은 팝업이 열리자마자 칠할 수 있게 localStorage에 둔다(common.js의 readTheme). */
+const presetIds = ['p0', 'p1', 'p2', 'p3'];
+async function saveSettings() {
+  const s = await getSettings();
+  const presets = presetIds.map((id, i) => {
+    const v = Math.round(+$(id).value);
+    return v >= 1 && v <= 1439 ? v : s.presets[i];
+  });
+  await chrome.storage.local.set({ settings: { ...s, presets, alertWindow: $('alertWindow').checked, sound: $('sound').checked } });
+}
+(async () => {
+  const s = await getSettings();
+  presetIds.forEach((id, i) => { $(id).value = s.presets[i]; $(id).addEventListener('change', saveSettings); });
+  $('alertWindow').checked = s.alertWindow;
+  $('sound').checked = s.sound;
+  $('alertWindow').addEventListener('change', saveSettings);
+  $('sound').addEventListener('change', saveSettings);
+})();
+document.querySelectorAll('[name="theme"]').forEach(r => {
+  r.checked = r.value === readTheme();
+  r.addEventListener('change', () => {
+    try { localStorage.setItem('theme', r.value); } catch {}
+    applyTheme(r.value);
+  });
+});
+let testAudio = null;
+$('test').onclick = () => {
+  if (testAudio) { testAudio.pause(); testAudio = null; $('test').textContent = '알림음 들어 보기'; return; }
+  testAudio = new Audio('chime.wav');
+  testAudio.play();
+  testAudio.onended = () => { testAudio = null; $('test').textContent = '알림음 들어 보기'; };
+  $('test').textContent = '멈추기';
+};
 
 /* ---------- 상태 읽기 ---------- */
 async function reload() {

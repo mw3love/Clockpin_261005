@@ -17,7 +17,28 @@
   .seg button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
   .gear { all: unset; cursor: pointer; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); }
   .gear:hover { background: var(--surf); }
-  .gear svg { width: 16px; height: 16px; }
+  .gear svg { width: 17px; height: 17px; }
+
+  /* 설정(팝업 안) */
+  .back { all: unset; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 600; padding: 3px 6px 3px 0; }
+  .back svg { width: 18px; height: 18px; }
+  .card { background: var(--surf); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .card h2 { margin: 0; font-size: 13px; }
+  .card p { margin: 0; font-size: 11.5px; color: var(--muted); }
+  .tri { display: flex; gap: 4px; background: var(--bg); border-radius: 10px; padding: 3px; }
+  .tri label { flex: 1; text-align: center; cursor: pointer; font-size: 12.5px; padding: 5px 0; border-radius: 8px; color: var(--muted); }
+  .tri input { position: absolute; opacity: 0; pointer-events: none; }
+  .tri label:has(input:checked) { background: var(--ink); color: var(--bg); }
+  .tri label:has(input:focus-visible) { outline: 2px solid var(--coral); outline-offset: 1px; }
+  .pre { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .pre input { width: 100%; font: inherit; font-size: 14px; text-align: center; padding: 6px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .tg { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; }
+  .tg input { appearance: none; margin: 0; width: 36px; height: 20px; border-radius: 99px; background: var(--line); position: relative; cursor: pointer; flex: none; transition: background .15s; }
+  .tg input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .tg input:checked { background: var(--coral); }
+  .tg input:checked::after { left: 18px; }
+  .tg input:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+  .mini { all: unset; cursor: pointer; font-size: 12px; padding: 4px 10px; border-radius: 99px; background: var(--bg); align-self: flex-start; }
   .pane { display: flex; flex-direction: column; gap: 12px; }
 
   /* 다이얼 */
@@ -31,11 +52,17 @@
   /* 휠·드래그는 popup.js가 직접 처리한다. 브라우저 스크롤·스냅은 끈다 */
   .wcol.drag { scroll-snap-type: none; overflow-y: hidden; touch-action: none; cursor: grab; user-select: none; }
   .wcol.drag.grabbing { cursor: grabbing; }
-  .wcol.drag div { cursor: inherit; }
+  .wcol.drag div { cursor: inherit; transition: color .12s; }
+  .wcol div.on { color: var(--coral); }
   .wcol.drag:focus-visible { outline: 2px solid var(--coral); outline-offset: -2px; border-radius: 12px; }
   .wcol.ap div { font-size: 20px; }
-  .wcolw small { font-size: 11px; color: var(--muted); }
-  .wsep { font-family: var(--round); font-size: 26px; color: var(--muted); z-index: 1; margin-top: -18px; }
+  .wsep { font-family: var(--round); font-size: 26px; color: var(--muted); z-index: 1; }
+  /* 다이얼을 지금 시각으로(돌린 뒤에만 보임) */
+  .rz { all: unset; cursor: pointer; position: absolute; right: 8px; top: 104px; z-index: 2; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); transition: opacity .15s; }
+  .rz:hover { background: var(--bg); color: var(--coral); }
+  .rz:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; }
+  .rz svg { width: 19px; height: 19px; }
+  .rz.off { opacity: 0; pointer-events: none; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
   .chip { all: unset; cursor: pointer; font-size: 12.5px; padding: 5px 11px; border-radius: 99px; background: var(--surf); box-shadow: 0 2px 6px var(--sh); }
   .chip:hover { color: var(--coral); }
@@ -71,15 +98,18 @@
 </style>
 </head>
 <body>
-  <header class="ph">
+  <header class="ph" id="sethead" hidden>
+    <button class="back" id="back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>설정</button>
+  </header>
+  <header class="ph" id="head">
     <div class="now"><span class="l">지금</span><span class="c" id="clock"></span></div>
     <div class="right">
       <div class="seg" role="tablist">
-        <button role="tab" data-tab="timer" aria-selected="true">타이머</button>
+        <button role="tab" data-tab="timer" aria-selected="true">알람</button>
         <button role="tab" data-tab="sw" aria-selected="false">스톱워치</button>
       </div>
       <button class="gear" id="opts" title="설정" aria-label="설정">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9.87 5.02 L10.48 2.42 L13.52 2.42 L14.13 5.02 L15.43 5.55 L17.70 4.15 L19.85 6.30 L18.45 8.57 L18.98 9.87 L21.58 10.48 L21.58 13.52 L18.98 14.13 L18.45 15.43 L19.85 17.70 L17.70 19.85 L15.43 18.45 L14.13 18.98 L13.52 21.58 L10.48 21.58 L9.87 18.98 L8.57 18.45 L6.30 19.85 L4.15 17.70 L5.55 15.43 L5.02 14.13 L2.42 13.52 L2.42 10.48 L5.02 9.87 L5.55 8.57 L4.15 6.30 L6.30 4.15 L8.57 5.55Z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
   </header>
@@ -87,10 +117,11 @@
   <section class="pane" id="setup">
     <div class="wheels">
       <div class="band"></div>
-      <div class="wcolw"><div class="wcol ap" id="wap" tabindex="0" aria-label="오전 오후"></div><small>&nbsp;</small></div>
-      <div class="wcolw"><div class="wcol" id="wh" tabindex="0" aria-label="시"></div><small>시</small></div>
+      <button class="rz off" id="rz" title="지금 시각으로" aria-label="지금 시각으로" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 13A8 8 0 1 0 6.4 6.3"/><path d="M4.5 3.5v4h4"/><path d="M12 8v4.3l2.8 1.7"/></svg></button>
+      <div class="wcolw"><div class="wcol ap" id="wap" tabindex="0" aria-label="오전 오후"></div></div>
+      <div class="wcolw"><div class="wcol" id="wh" tabindex="0" aria-label="시"></div></div>
       <span class="wsep">:</span>
-      <div class="wcolw"><div class="wcol" id="wm" tabindex="0" aria-label="분"></div><small>분</small></div>
+      <div class="wcolw"><div class="wcol" id="wm" tabindex="0" aria-label="분"></div></div>
     </div>
     <div class="chips">
       <button class="chip" data-p="60">+1분</button>
@@ -116,6 +147,33 @@
     <div class="swt" id="swt">00:00<small>.0</small></div>
     <div class="row"><button class="b pri" id="swgo">시작</button><button class="b" id="swlap">랩</button><button class="b" id="swreset">초기화</button></div>
     <ol class="laps" id="laps"></ol>
+  </section>
+
+  <section class="pane" id="set" hidden>
+    <div class="card">
+      <h2>화면 색</h2>
+      <div class="tri" role="radiogroup" aria-label="화면 색">
+        <label><input type="radio" name="theme" value="auto">자동</label>
+        <label><input type="radio" name="theme" value="light">밝게</label>
+        <label><input type="radio" name="theme" value="dark">어둡게</label>
+      </div>
+      <p>「자동」은 맥의 라이트·다크 모드를 따라가요.</p>
+    </div>
+    <div class="card">
+      <h2>우클릭 메뉴 시간(분)</h2>
+      <div class="pre">
+        <input type="number" min="1" max="1439" id="p0" aria-label="1번">
+        <input type="number" min="1" max="1439" id="p1" aria-label="2번">
+        <input type="number" min="1" max="1439" id="p2" aria-label="3번">
+        <input type="number" min="1" max="1439" id="p3" aria-label="4번">
+      </div>
+    </div>
+    <div class="card">
+      <h2>시간이 됐을 때</h2>
+      <label class="tg">작은 알림 창도 띄우기<input type="checkbox" id="alertWindow"></label>
+      <label class="tg">알림음 울리기<input type="checkbox" id="sound"></label>
+      <button class="mini" id="test">알림음 들어 보기</button>
+    </div>
   </section>
 
   <script src="popup.js"></script>

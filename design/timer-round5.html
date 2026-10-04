@@ -1,0 +1,394 @@
+<title>타이머 확장 5차 시안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Jua&display=swap">
+<style>
+/* Layout: four decision rows (dark palette / time dial / ring center / toolbar icon); mocks carry their own palette via data-mt */
+:root{
+  --bg:#F1F4F3; --ink:#16201D; --muted:#5F6B68; --line:#DCE3E0; --card:#FFFFFF; --rec:#1E7A5E; --rec-soft:#DDF1E9;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --m-round:"Jua","IBM Plex Sans KR",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55;padding:40px 16px 64px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.intro{max-width:70ch;display:flex;flex-direction:column;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+.intro p{margin:0;color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sec-h{display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.sec-h h2{margin:0;font-size:20px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+.sec-h h2 .k{font-family:var(--f-num);font-size:13px;color:var(--muted);font-weight:600}
+.sec-h p{margin:0;color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start}
+.opt{display:flex;flex-direction:column;gap:12px;min-width:0}
+.opt h3{margin:0;font-size:15px;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.opt h3 .tag{font-family:var(--f-num);font-size:12.5px;color:var(--muted);font-weight:600}
+.rec{font-size:11px;font-weight:600;color:var(--rec);background:var(--rec-soft);padding:1px 8px;border-radius:99px}
+.opt p,.note{margin:0;font-size:13px;color:var(--muted);max-width:360px}
+.opt p b,.note b{color:var(--ink);font-weight:600}
+.mt{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.mt button{all:unset;cursor:pointer;font-size:12.5px;color:var(--ink);border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 12px}
+.mt button[aria-pressed="true"]{border-color:var(--rec);color:var(--rec);background:var(--rec-soft);font-weight:600}
+.mt button:focus-visible,.m button:focus-visible{outline:2px solid var(--rec);outline-offset:2px}
+.duo{display:flex;flex-direction:column;gap:14px}
+
+/* ---------- mock palettes ---------- */
+.m{--m-bg:#EAF6F1;--m-ink:#1E3A33;--m-muted:#5E7B73;--m-line:#D2E9E0;--m-surf:#FFFFFF;--m-coral:#FF6F5B;--m-done:#E2463A;--m-sh:rgba(30,58,51,.08);--m-pop-sh:rgba(30,58,51,.16);--m-tb:#DCEFE7;
+  background:var(--m-bg);color:var(--m-ink);font-family:var(--f-body)}
+.m[data-mt="soft"]{--m-bg:#DDEBE5;--m-ink:#1E3A33;--m-muted:#56706A;--m-line:#C9DDD5;--m-surf:#EEF5F2;--m-coral:#EE6553;--m-done:#D63F33;--m-tb:#D0E3DB}
+.m[data-mt="d1"]{--m-bg:#14231F;--m-ink:#DCEEE7;--m-muted:#8AA79F;--m-line:#25392F;--m-surf:#1F332D;--m-coral:#FF7C69;--m-done:#FF6B5E;--m-sh:rgba(0,0,0,.35);--m-pop-sh:rgba(0,0,0,.5);--m-tb:#1A2B26;color-scheme:dark}
+.m[data-mt="d2"]{--m-bg:#1B1C1E;--m-ink:#E6E8E7;--m-muted:#9CA19F;--m-line:#2C2E31;--m-surf:#26282B;--m-coral:#FF7C69;--m-done:#FF6B5E;--m-sh:rgba(0,0,0,.4);--m-pop-sh:rgba(0,0,0,.55);--m-tb:#232427;color-scheme:dark}
+
+.pop{width:320px;max-width:100%;border-radius:22px;box-shadow:0 14px 34px var(--m-pop-sh);overflow:hidden;padding:14px;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.now{display:flex;flex-direction:column;line-height:1.2}
+.now .l{font-size:11px;color:var(--m-muted)}
+.now .c{font-family:var(--m-round);font-size:16px;font-variant-numeric:tabular-nums}
+.seg{display:flex;background:var(--m-surf);border-radius:16px;padding:2px}
+.seg span{font-size:12px;padding:4px 10px;border-radius:14px;color:var(--m-muted)}
+.seg span.on{background:var(--m-ink);color:var(--m-bg)}
+.row{display:flex;gap:8px}
+.b{all:unset;cursor:pointer;flex:1;text-align:center;padding:10px 0;border-radius:14px;background:var(--m-surf);font-size:13.5px;color:var(--m-ink)}
+.b:hover{box-shadow:0 0 0 2px var(--m-line) inset}
+.b.pri{background:var(--m-coral);color:#fff;box-shadow:0 6px 14px rgba(255,111,91,.3)}
+.go{all:unset;cursor:pointer;text-align:center;background:var(--m-coral);color:#fff;font-weight:600;border-radius:14px;padding:13px 0;font-size:16px;box-shadow:0 6px 14px rgba(255,111,91,.3)}
+.go[disabled]{opacity:.35;cursor:not-allowed;box-shadow:none}
+.at{font-size:12.5px;color:var(--m-muted);text-align:center;min-height:19px}
+.at b{color:var(--m-ink);font-family:var(--m-round);font-weight:400;font-size:14px}
+.tmr{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--m-coral);border-radius:6px;padding:0 6px;margin-right:4px;vertical-align:1px}
+
+/* dial */
+.wheels{position:relative;display:flex;justify-content:center;align-items:center;gap:2px;padding-top:4px}
+.band{position:absolute;left:4px;right:4px;top:96px;height:46px;background:var(--m-surf);border-radius:16px;box-shadow:0 4px 12px var(--m-sh);pointer-events:none}
+.wcolw{display:flex;flex-direction:column;align-items:center;z-index:1}
+.wcol{width:70px;height:230px;padding-block:92px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent)}
+.wcol.static{padding-block:0;overflow:hidden}
+.wcol::-webkit-scrollbar{display:none}
+.wcol div{height:46px;line-height:46px;text-align:center;scroll-snap-align:center;font-family:var(--m-round);font-size:32px;cursor:ns-resize;font-variant-numeric:tabular-nums}
+.wcolw small{font-size:11px;color:var(--m-muted)}
+.wsep{font-family:var(--m-round);font-size:26px;color:var(--m-muted);z-index:1;margin-top:-18px}
+.ko{font-size:12px;color:var(--m-muted);text-align:center;margin-top:-6px;display:flex;justify-content:center;align-items:center;gap:8px;min-height:22px}
+.live{font-size:10.5px;font-weight:600;color:var(--m-coral);display:inline-flex;align-items:center;gap:4px}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--m-coral);animation:blink 1.2s steps(2) infinite}
+.rs{all:unset;cursor:pointer;font-size:11.5px;color:var(--m-ink);background:var(--m-surf);border-radius:99px;padding:1px 9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chip{all:unset;cursor:pointer;font-size:12.5px;padding:5px 11px;border-radius:99px;background:var(--m-surf);box-shadow:0 2px 6px var(--m-sh)}
+.chip:hover{color:var(--m-coral)}
+
+/* ring */
+.ring{position:relative;width:190px;height:190px;margin:4px auto 0}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .tr{fill:none;stroke:var(--m-surf);stroke-width:12}
+.ring .pg{fill:none;stroke:var(--m-coral);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.ring .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ring .big{font-family:var(--m-round);line-height:1;font-variant-numeric:tabular-nums}
+.ring .sub{font-size:12px;color:var(--m-muted)}
+.ring .sub b{font-family:var(--m-round);font-weight:400;font-size:15px;color:var(--m-ink)}
+.ring .cap{font-size:11px;color:var(--m-muted)}
+.done .ring .pg{stroke:var(--m-done)}
+.done .ring .big{color:var(--m-done);animation:blink 1s steps(2) infinite}
+
+/* alert window */
+.win{width:300px;max-width:100%;border-radius:16px;overflow:hidden;box-shadow:0 18px 40px var(--m-pop-sh)}
+.win .tb{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--m-tb)}
+.win .tb i{width:11px;height:11px;border-radius:50%;background:#FF5F57}.win .tb i+i{background:#FEBC2E}.win .tb i+i+i{background:#28C840}
+.win .tb span{flex:1;text-align:center;font-size:11.5px;color:var(--m-muted);margin-right:40px}
+.win .bd{padding:18px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.win .bell{width:54px;height:54px;border-radius:50%;background:var(--m-coral);display:grid;place-items:center;box-shadow:0 8px 18px rgba(255,111,91,.35)}
+.win .bell svg{width:28px;height:28px}
+.win .h{font-family:var(--m-round);font-size:30px}
+.win .row{width:100%;margin-top:8px}
+
+/* toolbar */
+.tbar{display:flex;align-items:center;gap:12px;border-radius:10px;padding:8px 12px;width:320px;max-width:100%}
+.tbar.lt{background:#F1F3F4}.tbar.dk{background:#35363A}
+.tbar .url{flex:1;min-width:0;height:26px;border-radius:13px;font-size:11.5px;line-height:26px;padding:0 12px;white-space:nowrap;overflow:hidden}
+.tbar.lt .url{background:#fff;color:#5F6368}.tbar.dk .url{background:#202124;color:#9AA0A6}
+.ticon{position:relative;width:28px;height:28px;display:grid;place-items:center;flex:none}
+.ticon img{width:16px;height:16px}
+.bdg{position:absolute;right:-6px;bottom:-4px;background:#FF6F5B;color:#fff;font-family:Arial,var(--f-body);font-size:10px;font-weight:700;line-height:14px;padding:0 3px;border-radius:4px}
+
+.pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;max-width:780px;display:flex;flex-direction:column;gap:10px}
+.pick h2{margin:0;font-size:17px}
+.pick ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;color:var(--muted)}
+.pick b{color:var(--ink)}
+.pick code{font-family:var(--f-num);font-size:13px;background:var(--rec-soft);color:var(--rec);padding:1px 6px;border-radius:4px}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+<style>
+[hidden]{display:none!important}
+.wcol.ap div{font-size:20px}
+.sel{font-size:11px;font-weight:600;color:#fff;background:var(--rec);padding:1px 8px;border-radius:99px}
+.wcol.drag{scroll-snap-type:none;overflow-y:hidden;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.wcol.drag.grabbing{cursor:grabbing}
+.wcol.drag div{cursor:inherit;transition:color .12s}
+.wcol.drag:focus-visible{outline:2px solid var(--m-coral);outline-offset:-2px;border-radius:12px}
+/* 가운데 줄 색: hl-coral = 가운데만 코랄, hl-mute = 나머지 흐리게 */
+.hl-coral .wcol div.on{color:var(--m-coral)}
+.hl-mute .wcol div{color:var(--m-muted)}
+.hl-mute .wcol div.on{color:var(--m-ink)}
+.wheels.nolabel{padding-bottom:0}
+.ph .gear{all:unset;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;color:var(--m-muted)}
+.ph .gear:hover{background:var(--m-surf)}
+.ph .gear svg{width:17px;height:17px}
+.ph .r{display:flex;align-items:center;gap:6px}
+.back{all:unset;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:15px;font-weight:600;color:var(--m-ink);padding:2px 6px 2px 0}
+.back svg{width:18px;height:18px}
+/* 팝업 안 설정 화면 */
+.set{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--m-surf);border-radius:14px;padding:12px 12px;display:flex;flex-direction:column;gap:8px}
+.card h4{margin:0;font-size:13px}
+.card p{margin:0;font-size:11.5px;color:var(--m-muted);max-width:none}
+.tri{display:flex;gap:4px;background:var(--m-bg);border-radius:10px;padding:3px}
+.tri button{all:unset;cursor:pointer;flex:1;text-align:center;font-size:12.5px;padding:5px 0;border-radius:8px;color:var(--m-muted)}
+.tri button[aria-pressed="true"]{background:var(--m-ink);color:var(--m-bg)}
+.pre{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pre input{width:100%;font:inherit;font-size:14px;text-align:center;padding:6px 0;border-radius:8px;border:1px solid var(--m-line);background:var(--m-bg);color:var(--m-ink)}
+.tg{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.sw{all:unset;cursor:pointer;width:36px;height:20px;border-radius:99px;background:var(--m-line);position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw[aria-checked="true"]{background:var(--m-coral)}
+.sw[aria-checked="true"]::after{left:18px}
+.mini{all:unset;cursor:pointer;font-size:12px;padding:4px 10px;border-radius:99px;background:var(--m-bg);align-self:flex-start}
+/* 톱니 비교 */
+.gears{display:flex;gap:18px;flex-wrap:wrap}
+.gears .m{border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12.5px}
+.gears svg{width:20px;height:20px}
+/* 아이콘 */
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px}
+.ic{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ic h3{margin:0;font-size:14px;display:flex;gap:8px;align-items:baseline}
+.ic h3 .tag{font-family:var(--f-num);font-size:12px;color:var(--muted)}
+.ic .big{display:flex;align-items:center;gap:14px}
+.ic .big svg{width:96px;height:96px;border-radius:8px;background:repeating-conic-gradient(rgba(127,127,127,.12) 0 25%,transparent 0 50%) 0 0/16px 16px}
+.ic .sizes{display:flex;flex-direction:column;gap:6px}
+.strip{display:flex;align-items:center;gap:10px;border-radius:8px;padding:6px 10px}
+.strip.lt{background:#F1F3F4}.strip.dk{background:#35363A}
+.strip .u{width:70px;height:18px;border-radius:9px}
+.strip.lt .u{background:#fff}.strip.dk .u{background:#202124}
+.strip svg.s16{width:16px;height:16px}.strip svg.s32{width:32px;height:32px}
+.ic p{margin:0;font-size:12.5px;color:var(--muted)}
+</style>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="g-gear" viewBox="0 0 24 24"><path d="M10.3 2.6h3.4l.5 2.6 1.6.9 2.5-.9 1.7 2.9-2 1.7v1.9l2 1.7-1.7 2.9-2.5-.9-1.6.9-.5 2.6h-3.4l-.5-2.6-1.6-.9-2.5.9-1.7-2.9 2-1.7V11.1l-2-1.7 1.7-2.9 2.5.9 1.6-.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="g-slid" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="g-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+
+  <!-- 확장 아이콘 후보: 128 기준, 바깥 16px 여백(그림 96px) -->
+  <symbol id="I1" viewBox="0 0 128 128"><circle cx="64" cy="64" r="40" fill="none" stroke="#FF7C69" stroke-opacity=".3" stroke-width="16"/><circle cx="64" cy="64" r="40" fill="none" stroke="#FF6F5B" stroke-width="16" stroke-linecap="round" stroke-dasharray="188 252" transform="rotate(-90 64 64)"/><circle cx="64" cy="64" r="9" fill="#FF6F5B"/></symbol>
+  <symbol id="I2" viewBox="0 0 128 128"><circle cx="64" cy="64" r="42" fill="none" stroke="#FF6F5B" stroke-width="14"/><path d="M64 64V38M64 64l18 10" stroke="#FF6F5B" stroke-width="12" stroke-linecap="round"/></symbol>
+  <symbol id="I3" viewBox="0 0 128 128"><circle cx="62" cy="68" r="42" fill="#FF6F5B"/><path d="M62 68V44M62 68l16 9" stroke="#fff" stroke-width="10" stroke-linecap="round"/><path d="M96 18l16 6-10 13z" fill="#FF6F5B"/><circle cx="91" cy="38" r="5" fill="#fff"/></symbol>
+  <symbol id="I4" viewBox="0 0 128 128"><circle cx="64" cy="64" r="48" fill="#FF6F5B"/><path d="M64 64V36M64 64l20 12" stroke="#fff" stroke-width="11" stroke-linecap="round"/></symbol>
+  <symbol id="I5" viewBox="0 0 128 128"><path d="M64 16c-22 0-36 16-36 38v20l-10 16h92l-10-16V54c0-22-14-38-36-38z" fill="#FF6F5B"/><circle cx="64" cy="102" r="10" fill="#FF6F5B"/><path d="M64 54V38M64 54l11 7" stroke="#fff" stroke-width="8" stroke-linecap="round"/></symbol>
+  <symbol id="I6" viewBox="0 0 128 128"><rect x="28" y="14" width="72" height="13" rx="6.5" fill="#FF6F5B"/><rect x="28" y="101" width="72" height="13" rx="6.5" fill="#FF6F5B"/><path d="M38 27h52c0 24-18 28-18 37s18 13 18 37H38c0-24 18-28 18-37S38 51 38 27z" fill="none" stroke="#FF6F5B" stroke-width="9" stroke-linejoin="round"/><path d="M50 98c4-14 14-16 14-22 0 6 10 8 14 22z" fill="#FF6F5B"/></symbol>
+  <symbol id="I7" viewBox="0 0 128 128"><circle cx="64" cy="64" r="56" fill="#26282B"/><circle cx="64" cy="64" r="34" fill="none" stroke="#FF7C69" stroke-width="12" stroke-linecap="round" stroke-dasharray="160 214" transform="rotate(-90 64 64)"/><path d="M64 64V44" stroke="#E6E8E7" stroke-width="9" stroke-linecap="round"/></symbol>
+  <symbol id="I8" viewBox="0 0 128 128"><rect x="54" y="10" width="20" height="14" rx="5" fill="#FF6F5B"/><circle cx="64" cy="70" r="44" fill="#FF6F5B"/><path d="M64 70V44M64 70l17 10" stroke="#fff" stroke-width="10" stroke-linecap="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">5차 시안 · 다이얼 정리 · 팝업 안 설정 · 아이콘</span>
+    <h1>군더더기를 덜고, 설정은 팝업 안으로</h1>
+    <p>다이얼 아래 「시」「분」 글자와 안내 문구를 뺐어요. 톱니바퀴를 누르면 팝업 안에서 설정 화면으로 넘어가요(직접 눌러 보세요). 아래쪽에는 확장 아이콘 후보 8개를 툴바 크기 그대로 놓았어요.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">H</span>가운데 줄 색</h2>
+      <p>휠·드래그·클릭으로 돌려 보면 가운데 줄 색이 따라 바뀌어요. 다이얼을 돌리기 전에는 아래 줄이 비어 있고, 돌리면 "약 N분 후 알림"이 나와요.</p>
+      <div class="mt" data-mtbar><span>미리보기 색:</span></div></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">H1</span>가운데만 코랄 <span class="rec">추천</span></h3>
+        <div class="m pop hl-coral" data-mtl data-setup></div>
+        <p>고른 시각이 시작 버튼, 링과 같은 색이라 "이게 고른 시각"이 확실해요.</p></div>
+      <div class="opt"><h3><span class="tag">H2</span>위아래를 흐리게</h3>
+        <div class="m pop hl-mute" data-mtl data-setup></div>
+        <p>더 차분해요. 대신 차이가 덜 눈에 띄어요.</p></div>
+      <div class="opt"><h3><span class="tag">S</span>팝업 안 설정 화면</h3>
+        <div class="m pop" data-mtl id="setpane"></div>
+        <p>「← 설정」을 누르면 타이머로 돌아가요. 바꾸는 즉시 저장해서 팝업이 닫혀도 그대로예요. 별도 설정 페이지와 우클릭 「옵션」 줄은 없어져요.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">G</span>설정 버튼 모양</h2><p>지금 모양은 해(☀)처럼 보여서 다크 모드 버튼으로 오해할 수 있어요. 위 시안에는 G1을 넣었어요.</p></div>
+    <div class="gears">
+      <div class="m" data-mtl><svg style="color:var(--m-muted)"><use href="#g-sun"/></svg>지금(해처럼 보임)</div>
+      <div class="m" data-mtl><svg style="color:var(--m-muted)"><use href="#g-gear"/></svg><b>G1</b> 톱니바퀴 <span class="rec">추천</span></div>
+      <div class="m" data-mtl><svg style="color:var(--m-muted)"><use href="#g-slid"/></svg><b>G2</b> 조절 막대</div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">I</span>확장 아이콘 후보</h2>
+      <p>툴바에서는 16px로 보여요(맥 레티나 화면은 32px 그림을 씀). 그래서 오른쪽 띠에 실제 크기로 밝은 툴바·어두운 툴바 위에 놓았어요. 툴바 색이 둘 다일 수 있어서, 코랄과 흰색만 써서 어느 쪽에서도 보이게 했어요. 큰 그림의 체크무늬는 투명한 부분이에요.</p></div>
+    <div class="icons" id="icons"></div>
+  </section>
+
+  <section class="pick">
+    <h2>골라 주실 것</h2>
+    <ul>
+      <li><b>가운데 줄 색:</b> <code>H1</code>(코랄) 또는 <code>H2</code>(흐리게)</li>
+      <li><b>설정 버튼:</b> <code>G1</code>(톱니바퀴) 또는 <code>G2</code>(조절 막대)</li>
+      <li><b>아이콘:</b> <code>I1</code>~<code>I8</code> 중 하나. 섞어도 돼요. 예: "I4 모양에 I1 링"</li>
+      <li><b>설정 화면</b>에서 빼거나 더할 것이 있으면 같이 알려 주세요.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+const pad=n=>String(n).padStart(2,'0');
+const IH=46;
+function durKo(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),p=[];if(h)p.push(h+'시간');if(m)p.push(m+'분');return p.join(' ')||'0분';}
+const ceilMin=ms=>Math.ceil(ms/60000)*60000;
+const gearBtn='<button class="gear" data-gear title="설정" aria-label="설정"><svg><use href="#g-gear"/></svg></button>';
+const header=()=>`<div class="ph"><div></div><div class="r"><div class="seg"><span class="on">타이머</span><span>스톱워치</span></div>${gearBtn}</div></div>`;
+
+/* ---------- mock theme switch ---------- */
+const MTS=[['soft','L1 밝게'],['d2','D2 다크']];
+let mt='d2';
+function applyMt(){
+  document.querySelectorAll('[data-mtl]').forEach(e=>e.dataset.mt=mt);
+  document.querySelectorAll('[data-mtbar] button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===mt));
+}
+document.querySelectorAll('[data-mtbar]').forEach(bar=>{
+  MTS.forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.dataset.v=v;b.textContent=l;b.onclick=()=>{mt=v;applyMt();};bar.appendChild(b);});
+});
+
+/* ---------- 다이얼(확장 popup.js와 같은 동작) + 가운데 줄 표시 ---------- */
+const STEP_PX=30,NOTCH_PX=40,FAST_MS=70;
+function makeWheel(el,items,onChange){
+  el.classList.add('drag');
+  el.innerHTML=items.map(v=>`<div>${v}</div>`).join('');
+  const rows=el.children,n=items.length,clamp=i=>Math.max(0,Math.min(n-1,i));
+  let idx=0,acc=0,streak=0,lastT=0,lastDir=0,glideT=0,drag=null,lit=-1;
+  const mark=i=>{if(i===lit)return;rows[lit]?.classList.remove('on');rows[i]?.classList.add('on');lit=i;};
+  const go=(i,smooth)=>{mark(i);el.scrollTo({top:i*IH,behavior:smooth?'smooth':'auto'});};
+  function move(i){i=clamp(i);if(i===idx){go(idx,true);return;}const prev=idx;idx=i;go(idx,true);onChange(prev,idx);}
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const dy=e.deltaMode===1?e.deltaY*NOTCH_PX:e.deltaY;
+    if(Math.abs(dy)>=NOTCH_PX){
+      const t=performance.now(),dir=Math.sign(dy);
+      streak=(t-lastT<FAST_MS&&dir===lastDir)?streak+1:0;lastT=t;lastDir=dir;acc=0;
+      move(idx+dir*(streak<2?1:streak<5?2:3));
+      clearTimeout(glideT);
+      if(streak>=3)glideT=setTimeout(()=>{move(idx+dir*Math.min(5,Math.floor(streak/2)));streak=0;},FAST_MS+20);
+      return;
+    }
+    acc+=dy;
+    if(Math.abs(acc)>=STEP_PX){const k=Math.trunc(acc/STEP_PX);acc-=k*STEP_PX;move(idx+k);}
+  },{passive:false});
+  el.addEventListener('pointerdown',e=>{el.setPointerCapture(e.pointerId);el.classList.add('grabbing');drag={y0:e.clientY,top0:el.scrollTop,moved:0,ly:e.clientY,lt:performance.now(),v:0};});
+  el.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const dy=e.clientY-drag.y0;drag.moved=Math.max(drag.moved,Math.abs(dy));
+    el.scrollTop=Math.max(0,Math.min((n-1)*IH,drag.top0-dy));mark(Math.round(el.scrollTop/IH));
+    const t=performance.now();if(t>drag.lt){drag.v=(e.clientY-drag.ly)/(t-drag.lt);drag.ly=e.clientY;drag.lt=t;}
+  });
+  const end=e=>{
+    if(!drag)return;el.classList.remove('grabbing');
+    if(drag.moved<5){const r=el.getBoundingClientRect(),row=Math.floor((e.clientY-r.top+el.scrollTop-92)/IH);move(row===idx&&n===2?1-idx:row);}
+    else{const fling=performance.now()-drag.lt<80?drag.v*-180:0;move(Math.round((el.scrollTop+fling)/IH));}
+    drag=null;
+  };
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  el.addEventListener('keydown',e=>{if(e.key==='ArrowUp'){e.preventDefault();move(idx-1);}if(e.key==='ArrowDown'){e.preventDefault();move(idx+1);}});
+  return {get:()=>idx,set:(i,smooth)=>{idx=clamp(i);go(idx,smooth);}};
+}
+
+/* ---------- 설정 화면 마크업 ---------- */
+const settingsHTML=`<div class="ph"><button class="back" data-back><svg><use href="#i-back"/></svg>설정</button></div>
+  <div class="set">
+    <div class="card"><h4>화면 색</h4><div class="tri" data-tri><button aria-pressed="true">자동</button><button aria-pressed="false">밝게</button><button aria-pressed="false">어둡게</button></div><p>「자동」은 맥의 라이트·다크 모드를 따라가요.</p></div>
+    <div class="card"><h4>우클릭 메뉴 시간(분)</h4><div class="pre"><input value="5" aria-label="1번"><input value="10" aria-label="2번"><input value="25" aria-label="3번"><input value="60" aria-label="4번"></div></div>
+    <div class="card"><h4>시간이 됐을 때</h4>
+      <div class="tg">작은 알림 창도 띄우기<button class="sw" role="switch" aria-checked="true" aria-label="작은 알림 창"></button></div>
+      <div class="tg">알림음 울리기<button class="sw" role="switch" aria-checked="true" aria-label="알림음"></button></div>
+      <button class="mini">알림음 들어 보기</button></div>
+  </div>`;
+function wireSettings(root){
+  root.querySelectorAll('.sw').forEach(s=>s.onclick=()=>s.setAttribute('aria-checked',s.getAttribute('aria-checked')!=='true'));
+  root.querySelectorAll('[data-tri] button').forEach(b=>b.onclick=()=>b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)));
+}
+
+/* ---------- 설정 다이얼 팝업 두 개 ---------- */
+document.querySelectorAll('[data-setup]').forEach(root=>{
+  const setupHTML=`${header()}
+    <div class="wheels nolabel"><div class="band"></div>
+      <div class="wcolw"><div class="wcol ap" data-c="ap" tabindex="0" aria-label="오전 오후"></div></div>
+      <div class="wcolw"><div class="wcol" data-c="h" tabindex="0" aria-label="시"></div></div><span class="wsep" style="margin-top:0">:</span>
+      <div class="wcolw"><div class="wcol" data-c="m" tabindex="0" aria-label="분"></div></div></div>
+    <div class="chips">${[[60,'+1분'],[300,'+5분'],[600,'+10분'],[1500,'+25분'],[3600,'+1시간']].map(([s,l])=>`<button class="chip" data-p="${s}">${l}</button>`).join('')}</div>
+    <div class="at" data-endline></div>
+    <button class="go" data-go>시작</button>`;
+  const v1=document.createElement('div'),v2=document.createElement('div');
+  v1.style.cssText=v2.style.cssText='display:flex;flex-direction:column;gap:12px';
+  v1.innerHTML=setupHTML;v2.innerHTML=settingsHTML;v2.hidden=true;
+  root.append(v1,v2);wireSettings(v2);
+  v1.querySelector('[data-gear]').onclick=()=>{v1.hidden=true;v2.hidden=false;};
+  v2.querySelector('[data-back]').onclick=()=>{v2.hidden=true;v1.hidden=false;};
+  const q=s=>v1.querySelector(s);
+  let touched=false;
+  const touch=()=>{touched=true;render();};
+  const wAp=makeWheel(q('[data-c="ap"]'),['오전','오후'],touch);
+  const wH=makeWheel(q('[data-c="h"]'),Array.from({length:12},(_,i)=>i+1),(p,c)=>{if((p===11)!==(c===11))wAp.set(1-wAp.get(),true);touch();});
+  const wM=makeWheel(q('[data-c="m"]'),Array.from({length:60},(_,i)=>pad(i)),touch);
+  const setWheels=(d,s)=>{wAp.set(d.getHours()<12?0:1,s);wH.set((d.getHours()%12||12)-1,s);wM.set(d.getMinutes(),s);};
+  q('.chips').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;setWheels(new Date(ceilMin(Date.now()+ +b.dataset.p*1000)),true);touch();});
+  function render(){
+    if(!touched){q('[data-endline]').textContent='';q('[data-go]').disabled=true;return;}
+    const now=new Date(),d=new Date(now);d.setHours((wH.get()+1)%12+wAp.get()*12,wM.get(),0,0);
+    const tm=d<=now;if(tm)d.setDate(d.getDate()+1);
+    const sec=(d-now)/1000;
+    q('[data-endline]').innerHTML=(tm?'<span class="tmr">내일</span>':'')+`<b>${sec<60?'1분 안에':'약 '+durKo(Math.floor(sec/60)*60)+' 후'}</b> 알림`;
+    q('[data-go]').disabled=false;
+  }
+  q('[data-go]').onclick=()=>{touched=false;setWheels(new Date(),true);render();};
+  requestAnimationFrame(()=>setWheels(new Date(),false));
+  render();setInterval(render,1000);
+});
+
+/* ---------- 설정 화면만 따로 ---------- */
+const sp=document.getElementById('setpane');sp.innerHTML=settingsHTML;wireSettings(sp);
+
+/* ---------- 아이콘 후보 ---------- */
+const ICONS=[
+  ['I1','진행 링','진행 화면의 코랄 링과 같은 모양이에요. 팝업과 아이콘이 한 식구처럼 보여요.',true],
+  ['I2','선 시계','가장 단순한 시계예요. 16px에서도 또렷하지만 흔한 모양이에요.',false],
+  ['I3','시계 + 끝 표시','시계 바깥에 작은 깃발을 꽂아 "끝나는 시각"을 표시했어요. 16px에서는 깃발이 작아져요.',false],
+  ['I4','코랄 원 시계','꽉 찬 코랄 원이라 툴바에서 가장 눈에 잘 띄어요.',false],
+  ['I5','종 + 시계','"알림"이 바로 읽혀요. 다만 시계 바늘은 16px에서 거의 안 보여요.',false],
+  ['I6','모래시계','타이머라는 뜻은 분명하지만, 끝나는 시각을 고르는 방식과는 조금 멀어요.',false],
+  ['I7','차콜 원 + 링','D2 다크 색 바탕에 코랄 링이에요. 어두운 툴바에서는 바탕이 묻혀요.',false],
+  ['I8','스톱워치(지금 것 정리)','지금 아이콘에서 네모 바탕을 빼고 코랄로 바꿨어요.',false],
+];
+document.getElementById('icons').innerHTML=ICONS.map(([k,n,d,rec])=>`
+  <div class="ic"><h3><span class="tag">${k}</span>${n}${rec?' <span class="rec">추천</span>':''}</h3>
+    <div class="big"><svg viewBox="0 0 128 128"><use href="#${k}"/></svg>
+      <div class="sizes">
+        <div class="strip lt"><span class="u"></span><svg class="s16"><use href="#${k}"/></svg><svg class="s32"><use href="#${k}"/></svg></div>
+        <div class="strip dk"><span class="u"></span><svg class="s16"><use href="#${k}"/></svg><svg class="s32"><use href="#${k}"/></svg></div>
+      </div></div>
+    <p>${d}</p></div>`).join('')+`
+  <div class="ic"><h3><span class="tag">지금</span>지금 아이콘(비교용)</h3>
+    <div class="big"><img src="../extension/icons/icon128.png" width="96" height="96" alt="지금 아이콘">
+      <div class="sizes">
+        <div class="strip lt"><span class="u"></span><img src="../extension/icons/icon16.png" width="16" height="16" alt=""><img src="../extension/icons/icon32.png" width="32" height="32" alt=""></div>
+        <div class="strip dk"><span class="u"></span><img src="../extension/icons/icon16.png" width="16" height="16" alt=""><img src="../extension/icons/icon32.png" width="32" height="32" alt=""></div>
+      </div></div>
+    <p>네모 바탕과 가는 바늘이 16px에서 뭉개져요.</p></div>`;
+
+applyMt();
+})();
+</script>
