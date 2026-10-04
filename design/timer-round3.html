@@ -1,0 +1,298 @@
+<title>타이머 확장 3차 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Jua&display=swap">
+<style>
+/* Layout: five decision rows (running / alert / badge / menu / stopwatch), each row = 2-3 option cards; mocks use the chosen A3 mint look */
+:root{
+  --bg:#F1F4F3; --ink:#16201D; --muted:#5F6B68; --line:#DCE3E0; --card:#FFFFFF; --accent:#D9503F; --rec:#1E7A5E; --rec-soft:#DDF1E9;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  /* A3 mint look (single look, same in both page themes) */
+  --m-bg:#EAF6F1; --m-ink:#1E3A33; --m-muted:#5E7B73; --m-line:#D2E9E0; --m-white:#FFFFFF; --m-coral:#FF6F5B; --m-done:#E2463A;
+  --m-round:"Jua","IBM Plex Sans KR",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--accent:#FF8574;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--accent:#FF8574;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55;padding:40px 16px 64px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.intro{max-width:68ch;display:flex;flex-direction:column;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+.intro p{margin:0;color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sec-h{display:flex;flex-direction:column;gap:4px;max-width:70ch}
+.sec-h h2{margin:0;font-size:20px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+.sec-h h2 .k{font-family:var(--f-num);font-size:13px;color:var(--muted);font-weight:600}
+.sec-h p{margin:0;color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:start}
+.opt{display:flex;flex-direction:column;gap:12px;min-width:0}
+.opt h3{margin:0;font-size:15px;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.opt h3 .tag{font-family:var(--f-num);font-size:12.5px;color:var(--muted);font-weight:600}
+.rec{font-size:11px;font-weight:600;color:var(--rec);background:var(--rec-soft);padding:1px 8px;border-radius:99px}
+.opt p{margin:0;font-size:13px;color:var(--muted);max-width:340px}
+.opt p b{color:var(--ink);font-weight:600}
+.stage{min-height:120px;display:flex;align-items:flex-start}
+.try{all:unset;cursor:pointer;font-size:12.5px;color:var(--ink);border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 12px;align-self:flex-start}
+.try:focus-visible,.m button:focus-visible{outline:2px solid var(--rec);outline-offset:2px}
+
+/* ---------- mint popup ---------- */
+.m{background:var(--m-bg);color:var(--m-ink);font-family:var(--f-body)}
+.pop{width:320px;max-width:100%;border-radius:22px;box-shadow:0 14px 34px rgba(30,58,51,.16);overflow:hidden;padding:14px;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;justify-content:space-between;align-items:center}
+.now{display:flex;flex-direction:column;line-height:1.2}
+.now .l{font-size:11px;color:var(--m-muted)}
+.now .c{font-family:var(--m-round);font-size:16px}
+.seg{display:flex;background:var(--m-white);border-radius:16px;padding:2px}
+.seg span{font-size:12px;padding:4px 10px;border-radius:14px;color:var(--m-muted)}
+.seg span.on{background:var(--m-ink);color:var(--m-bg)}
+.row{display:flex;gap:8px}
+.b{all:unset;cursor:pointer;flex:1;text-align:center;padding:10px 0;border-radius:14px;background:var(--m-white);font-size:13.5px;color:var(--m-ink)}
+.b.pri{background:var(--m-coral);color:#fff;box-shadow:0 6px 14px rgba(255,111,91,.35)}
+.at{font-size:12.5px;color:var(--m-muted);text-align:center}
+.at b{color:var(--m-ink);font-family:var(--m-round);font-weight:400}
+
+/* R1 ring */
+.ring{position:relative;width:190px;height:190px;margin:0 auto}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .tr{fill:none;stroke:var(--m-white);stroke-width:12}
+.ring .pg{fill:none;stroke:var(--m-coral);stroke-width:12;stroke-linecap:round}
+.ring .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .left{font-family:var(--m-round);font-size:44px;line-height:1}
+.ring .sub{font-size:12px;color:var(--m-muted)}
+/* R2 drum countdown */
+.drum{position:relative;display:flex;justify-content:center;gap:2px}
+.drum .band{position:absolute;left:4px;right:4px;top:92px;height:46px;background:var(--m-white);border-radius:16px;box-shadow:0 4px 12px rgba(30,58,51,.08)}
+.dcol{height:230px;width:70px;overflow:hidden;position:relative;z-index:1;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.dcol .in{transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.dcol .in div{height:46px;line-height:46px;text-align:center;font-family:var(--m-round);font-size:32px}
+.dsep{font-family:var(--m-round);font-size:26px;color:var(--m-muted);z-index:1;align-self:center}
+/* R3 big number */
+.bign{font-family:var(--m-round);font-size:76px;line-height:1;text-align:center;padding-top:18px;letter-spacing:-.01em}
+.bar{height:14px;border-radius:7px;background:var(--m-white);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--m-coral);border-radius:7px}
+
+/* N1 OS notification */
+.osn{width:340px;max-width:100%;background:rgba(236,236,238,.96);color:#1D1D1F;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:12px 14px;display:flex;gap:10px;font-family:-apple-system,"Apple SD Gothic Neo",var(--f-body);transition:transform .3s,opacity .3s}
+.osn .ic{width:36px;height:36px;border-radius:9px;background:var(--m-bg);display:grid;place-items:center;flex:none}
+.osn .ic svg{width:22px;height:22px}
+.osn .tx{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.osn .t1{display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+.osn .t1 span{font-weight:400;color:#77777C;font-size:12px}
+.osn .t2{font-size:12.5px;color:#3A3A3C}
+.osn .acts{display:flex;gap:6px;margin-top:6px}
+.osn .acts span{font-size:12px;background:rgba(0,0,0,.07);border-radius:6px;padding:3px 10px}
+.osn.hide{transform:translateY(-12px);opacity:0}
+/* N2 alert window */
+.win{width:300px;max-width:100%;border-radius:16px;overflow:hidden;box-shadow:0 18px 40px rgba(30,58,51,.25)}
+.win .tb{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#DCEFE7}
+.win .tb i{width:11px;height:11px;border-radius:50%;background:#FF5F57}.win .tb i+i{background:#FEBC2E}.win .tb i+i+i{background:#28C840}
+.win .tb span{flex:1;text-align:center;font-size:11.5px;color:var(--m-muted);margin-right:40px}
+.win .bd{padding:18px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.win .bell{width:54px;height:54px;border-radius:50%;background:var(--m-coral);display:grid;place-items:center;box-shadow:0 8px 18px rgba(255,111,91,.4)}
+.win .bell svg{width:28px;height:28px}
+.win .big{font-family:var(--m-round);font-size:30px}
+.win .row{width:100%;margin-top:8px}
+.ring-now .bell{animation:shake .5s ease-in-out 4}
+@keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+/* toolbar + badge */
+.tbar{display:flex;align-items:center;gap:10px;background:#E8EAED;border-radius:10px;padding:8px 12px;color:#5F6368}
+.tbar .url{flex:1;min-width:0;height:24px;border-radius:12px;background:#fff;font-size:11.5px;line-height:24px;padding:0 10px;color:#5F6368;white-space:nowrap;overflow:hidden}
+.ticon{position:relative;width:28px;height:28px;border-radius:7px;background:var(--m-bg);display:grid;place-items:center;flex:none}
+.ticon svg{width:18px;height:18px}
+.bdg{position:absolute;right:-8px;bottom:-6px;background:var(--m-coral);color:#fff;font-family:Arial,var(--f-body);font-size:10px;font-weight:700;line-height:14px;padding:0 3px;border-radius:4px;max-width:30px;overflow:hidden;white-space:nowrap}
+.pulse .ticon{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(255,111,91,.35)}}
+.bstates{display:flex;gap:22px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.bstates div{display:flex;flex-direction:column;align-items:center;gap:8px}
+/* native-looking context menu */
+.cm{width:250px;background:#FFFFFF;color:#202124;border:1px solid #D7D9DC;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);padding:6px 0;font-size:13px;font-family:-apple-system,"Segoe UI",var(--f-body)}
+.cm div{padding:5px 14px;display:flex;justify-content:space-between}
+.cm div span{color:#80868B;font-size:12px}
+.cm hr{border:0;border-top:1px solid #E3E5E8;margin:5px 0}
+.cm .sys{color:#80868B}
+/* stopwatch */
+.swt{font-family:var(--m-round);font-size:52px;text-align:center;padding-top:14px;line-height:1.1}
+.swt small{font-size:28px;color:var(--m-muted)}
+.laps{list-style:none;margin:0;padding:0;max-height:120px;overflow:auto;font-size:12.5px}
+.laps li{display:flex;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:10px}
+.laps li:nth-child(odd){background:rgba(255,255,255,.6)}
+.laps li span:first-child{color:var(--m-muted)}
+.laps .num{font-family:var(--m-round);font-size:14px}
+.laps .fast .num{color:#1E8A64}.laps .slow .num{color:var(--m-done)}
+.laps .lg{font-size:11px;color:var(--m-muted);text-align:right}
+.empty{font-size:12px;color:var(--m-muted);text-align:center;padding:6px}
+
+.pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;max-width:760px;display:flex;flex-direction:column;gap:10px}
+.pick h2{margin:0;font-size:17px}
+.pick ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.pick b{color:var(--ink)}
+.pick code{font-family:var(--f-num);font-size:13px;background:var(--rec-soft);color:var(--rec);padding:1px 6px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="clk" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="none" stroke="#1E3A33" stroke-width="2.2"/><path d="M12 9v4l2.5 2M9.5 2.5h5" fill="none" stroke="#1E3A33" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">3차 시안 · A3 말랑 민트로 세부 정하기</span>
+    <h1>시간이 흐를 때와 끝났을 때, 어떻게 보여 줄까요</h1>
+    <p>다섯 가지를 각각 2~3안씩 놓았어요. 줄마다 하나씩 골라 주시면 돼요. 연두색 「추천」은 제 의견이에요. 화면의 시간은 모두 25분짜리 예시가 계속 돌아가는 거예요.</p>
+  </header>
+
+  <!-- 1 running -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">R</span>시간이 흐르는 동안의 팝업</h2><p>시작을 누른 뒤 팝업을 다시 열었을 때 보이는 화면이에요.</p></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">R1</span>둥근 링 <span class="rec">추천</span></h3>
+        <div class="m pop"><div class="ph"><div class="now"><span class="l">지금</span><span class="c" data-clock></span></div><div class="seg"><span class="on">타이머</span><span>스톱워치</span></div></div>
+          <div class="ring"><svg viewBox="0 0 190 190"><circle class="tr" cx="95" cy="95" r="80"/><circle class="pg" id="r1pg" cx="95" cy="95" r="80"/></svg><div class="mid"><div class="left" data-rem></div><div class="sub" data-end></div></div></div>
+          <div class="row"><button class="b">+1분</button><button class="b">일시정지</button><button class="b">취소</button></div></div>
+        <p><b>좋은 점:</b> 남은 양이 링 길이로 보여서 숫자를 안 읽어도 알 수 있어요.</p></div>
+      <div class="opt"><h3><span class="tag">R2</span>다이얼이 그대로 줄어듦</h3>
+        <div class="m pop"><div class="ph"><div class="now"><span class="l">지금</span><span class="c" data-clock></span></div><div class="seg"><span class="on">타이머</span><span>스톱워치</span></div></div>
+          <div class="drum"><div class="band"></div><div class="dcol"><div class="in" id="r2m"></div></div><span class="dsep">:</span><div class="dcol"><div class="in" id="r2s"></div></div></div>
+          <div class="at" data-endb></div>
+          <div class="row"><button class="b">+1분</button><button class="b">일시정지</button><button class="b">취소</button></div></div>
+        <p><b>좋은 점:</b> 설정할 때 본 다이얼이 그대로 거꾸로 돌아가서 화면이 하나로 이어져요.</p><p><b>아쉬운 점:</b> 얼마나 남았는지 비율은 안 보여요.</p></div>
+      <div class="opt"><h3><span class="tag">R3</span>큰 숫자와 막대</h3>
+        <div class="m pop"><div class="ph"><div class="now"><span class="l">지금</span><span class="c" data-clock></span></div><div class="seg"><span class="on">타이머</span><span>스톱워치</span></div></div>
+          <div class="bign" data-rem></div><div class="bar"><i id="r3bar"></i></div><div class="at" data-endb></div>
+          <div class="row"><button class="b">+1분</button><button class="b">일시정지</button><button class="b">취소</button></div></div>
+        <p><b>좋은 점:</b> 숫자가 가장 커서 한눈에 읽혀요.</p><p><b>아쉬운 점:</b> 화면이 단순해서 조금 심심할 수 있어요.</p></div>
+    </div>
+  </section>
+
+  <!-- 2 alert -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">N</span>시간이 됐을 때 알리는 방법</h2><p>알림 용도가 핵심이라 가장 중요한 부분이에요. 팝업은 이미 닫혀 있을 때가 많아서, 팝업 밖에서 알려야 해요. 둘 이상 골라도 돼요.</p></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">N1</span>운영체제 알림 <span class="rec">추천 · N2와 같이</span></h3>
+        <div class="stage"><div class="osn" id="n1"><div class="ic"><svg><use href="#clk"/></svg></div><div class="tx"><div class="t1">타이머 끝<span>지금</span></div><div class="t2">25분 타이머가 끝났어요 · <span data-endplain></span></div><div class="acts"><span>5분 더</span><span>끄기</span></div></div></div></div>
+        <button class="try" data-try="n1">울려 보기</button>
+        <p><b>좋은 점:</b> 크롬이 다른 창 뒤에 있어도 화면 구석에 떠요. 끌 때까지 안 사라지게 할 수 있어요.</p><p><b>아쉬운 점:</b> 모양은 운영체제가 정해서 꾸밀 수 없어요. 버튼은 2개까지예요. 맥에서 버튼이 어떻게 보이는지는 만들 때 확인할게요.</p></div>
+      <div class="opt"><h3><span class="tag">N2</span>작은 알림 창 띄우기</h3>
+        <div class="stage"><div class="m win" id="n2"><div class="tb"><i></i><i></i><i></i><span>타이머</span></div><div class="bd"><div class="bell"><svg><use href="#bell"/></svg></div><div class="big">시간 됐어요!</div><div class="at">25분 타이머 · <b data-endplain></b></div><div class="row"><button class="b">1분 더</button><button class="b">5분 더</button><button class="b pri">끄기</button></div></div></div></div>
+        <button class="try" data-try="n2">울려 보기</button>
+        <p><b>좋은 점:</b> 디자인을 우리 마음대로 할 수 있고, 눈에 확 띄어요. 버튼도 원하는 만큼 넣을 수 있어요.</p><p><b>아쉬운 점:</b> 일하는 중에 창이 앞으로 튀어나와서 방해가 될 수 있어요. 그래서 설정에서 끌 수 있게 하는 게 좋아요.</p></div>
+      <div class="opt"><h3><span class="tag">N3</span>조용히, 아이콘만 깜빡</h3>
+        <div class="stage"><div class="tbar" id="n3" style="width:320px;max-width:100%"><span class="url">docs.google.com/…</span><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">끝</span></div></div></div>
+        <button class="try" data-try="n3">울려 보기</button>
+        <p><b>좋은 점:</b> 회의 중이나 조용한 곳에서도 방해가 없어요.</p><p><b>아쉬운 점:</b> 아이콘을 안 보고 있으면 놓쳐요. 그래서 기본이 아니라 "조용히 모드" 같은 선택지로 두는 게 맞아 보여요.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 badge -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">B</span>아이콘 위 작은 글자</h2><p>크롬은 이 자리에 4글자 정도만 들어간다고 안내해요. 그래서 "24:13"처럼 5글자는 잘려요.</p></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">B1</span>남은 분 <span class="rec">추천</span></h3>
+        <div class="bstates"><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">24m</span></div>24분 남음</div><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">1h5</span></div>1시간 5분</div><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">45s</span></div>1분 미만</div></div>
+        <p>1분이 안 남으면 초로 바뀌어서 끝나 가는 게 느껴져요.</p></div>
+      <div class="opt"><h3><span class="tag">B2</span>숫자만</h3>
+        <div class="bstates"><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">24</span></div>24분 남음</div><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">65</span></div>1시간 5분</div><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">45</span></div>45초? 45분?</div></div>
+        <p>가장 깔끔하지만, 분인지 초인지 헷갈릴 수 있어요.</p></div>
+      <div class="opt"><h3><span class="tag">B3</span>끝나는 시각</h3>
+        <div class="bstates"><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">3:42</span></div>3시 42분에 끝</div><div><div class="ticon"><svg><use href="#clk"/></svg><span class="bdg">12:05</span></div>5글자라 잘림</div></div>
+        <p>"몇 시에 끝나지"를 보여 주지만, 10시 이후는 잘려요.</p></div>
+    </div>
+  </section>
+
+  <!-- 4 menu -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">M</span>아이콘 우클릭 메뉴</h2><p>이 메뉴는 크롬 기본 모양이라 색이나 글꼴을 바꿀 수 없어요. 무엇을 넣을지만 정하면 돼요. 맨 윗줄은 최대 6개예요.</p></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">M1</span>고정 시간 <span class="rec">추천</span></h3>
+        <div class="cm"><div>5분 타이머</div><div>10분 타이머</div><div>25분 타이머</div><div>1시간 타이머</div><div>스톱워치 시작</div><div>지금 타이머 끄기<span>24:13</span></div><hr><div class="sys">옵션</div><div class="sys">Chrome에서 삭제…</div></div>
+        <p>항목 위치가 늘 같아서 손에 익어요. 네 시간은 설정에서 바꿀 수 있게 해요.</p></div>
+      <div class="opt"><h3><span class="tag">M2</span>최근 쓴 시간 자동</h3>
+        <div class="cm"><div>최근: 25분</div><div>최근: 3분</div><div>최근: 40분</div><div>최근: 1시간 30분</div><div>스톱워치 시작</div><div>지금 타이머 끄기<span>24:13</span></div><hr><div class="sys">옵션</div><div class="sys">Chrome에서 삭제…</div></div>
+        <p>설정이 필요 없지만, 쓸 때마다 순서가 바뀌어서 잘못 누르기 쉬워요.</p></div>
+    </div>
+  </section>
+
+  <!-- 5 stopwatch -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">S</span>스톱워치 화면</h2><p>둘 다 실제로 눌러 볼 수 있어요.</p></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">S1</span>단순하게 <span class="rec">추천</span></h3><div class="m pop" id="s1"></div><p>큰 숫자와 버튼 세 개만 있어요. 알림 위주로 쓰신다면 이 정도면 충분해 보여요.</p></div>
+      <div class="opt"><h3><span class="tag">S2</span>랩 구간 비교</h3><div class="m pop" id="s2"></div><p>랩마다 걸린 시간을 따로 보여 주고, 가장 빠른 건 초록, 가장 느린 건 빨강으로 표시해요.</p></div>
+    </div>
+  </section>
+
+  <section class="pick">
+    <h2>이렇게 골라 주시면 돼요</h2>
+    <ul>
+      <li><b>줄마다 하나씩 적어 주세요.</b> 제 추천대로라면 <code>R1 · N1+N2 · B1 · M1 · S1</code>이에요.</li>
+      <li><b>바꾸고 싶은 점도 같이 적어 주세요.</b> 예: "N2 창에 15분 더 버튼 추가", "M1 시간은 3·5·10·30분"</li>
+      <li><b>다음 단계</b>는 고른 안으로 실제 크롬 확장을 만들어서 설치해 보는 거예요.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+const pad=n=>String(n).padStart(2,'0');
+const TOTAL=25*60,t0=Date.now()-((25*60-(24*60+13))*1000);
+function fmtClock(d,sec){let h=d.getHours();const ap=h<12?'오전':'오후';h=h%12||12;return ap+' '+h+':'+pad(d.getMinutes())+(sec?':'+pad(d.getSeconds()):'');}
+const fmt=s=>pad(Math.floor(s/60))+':'+pad(s%60);
+let actx=null;
+function beep(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime;for(let i=0;i<3;i++){const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=i%2?1046:784;o.connect(g);g.connect(actx.destination);const s=t+i*0.28;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.18,s+.02);g.gain.linearRampToValueAtTime(0,s+.22);o.start(s);o.stop(s+.24);}}catch(e){}}
+
+const RC=2*Math.PI*80,r1=document.getElementById('r1pg');r1.setAttribute('stroke-dasharray',RC);
+const list=n=>Array.from({length:n},(_,i)=>`<div>${pad(i)}</div>`).join('');
+const r2m=document.getElementById('r2m'),r2s=document.getElementById('r2s');r2m.innerHTML=list(60);r2s.innerHTML=list(60);
+let lastS=-1;
+function setDrum(el,v,prev){const jump=prev>=0&&Math.abs(v-prev)>1;el.style.transition=jump?'none':'';el.style.transform=`translateY(${(2-v)*46}px)`;}
+
+function loop(){
+  const now=new Date();
+  document.querySelectorAll('[data-clock]').forEach(e=>e.textContent=fmtClock(now,true));
+  const el=Math.floor((Date.now()-t0)/1000)%TOTAL,rem=TOTAL-el;
+  const end=new Date(Date.now()+rem*1000);
+  document.querySelectorAll('[data-rem]').forEach(e=>e.textContent=fmt(rem));
+  document.querySelectorAll('[data-end]').forEach(e=>e.textContent=fmtClock(end)+'에 알림');
+  document.querySelectorAll('[data-endb]').forEach(e=>e.innerHTML='<b>'+fmtClock(end)+'</b>에 알림');
+  document.querySelectorAll('[data-endplain]').forEach(e=>e.textContent=fmtClock(now));
+  r1.setAttribute('stroke-dashoffset',RC*(1-rem/TOTAL));
+  document.getElementById('r3bar').style.width=(rem/TOTAL*100)+'%';
+  const m=Math.floor(rem/60),s=rem%60;
+  if(s!==lastS){setDrum(r2s,s,lastS);setDrum(r2m,m,-1);lastS=s;}
+}
+loop();setInterval(loop,250);
+
+/* alerts */
+document.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>{
+  const k=b.dataset.try,el=document.getElementById(k);
+  if(k==='n1'){el.classList.add('hide');setTimeout(()=>{el.classList.remove('hide');beep();},350);}
+  if(k==='n2'){el.classList.remove('ring-now');void el.offsetWidth;el.classList.add('ring-now');beep();}
+  if(k==='n3'){el.classList.add('pulse');setTimeout(()=>el.classList.remove('pulse'),4000);}
+});
+
+/* stopwatches */
+function sw(root,detailed){
+  root.innerHTML=`<div class="ph"><div class="now"><span class="l">지금</span><span class="c" data-clock></span></div><div class="seg"><span>타이머</span><span class="on">스톱워치</span></div></div>
+  <div class="swt" data-t>00:00<small>.0</small></div>
+  <div class="row"><button class="b pri" data-go>시작</button><button class="b" data-lap>랩</button><button class="b" data-rs>초기화</button></div>
+  <ol class="laps" data-laps></ol>`;
+  const q=s=>root.querySelector(s);let acc=0,st=0,on=false,laps=[];
+  const cur=()=>acc+(on?Date.now()-st:0);
+  const f=ms=>pad(Math.floor(ms/60000))+':'+pad(Math.floor(ms/1000)%60)+'.'+Math.floor(ms%1000/100);
+  function drawLaps(){
+    if(!laps.length){q('[data-laps]').innerHTML=detailed?'<li class="empty" style="justify-content:center">랩을 누르면 구간 시간이 여기에 쌓여요</li>':'';return;}
+    const seg=laps.map((t,i)=>t-(laps[i-1]||0));const mx=Math.max(...seg),mn=Math.min(...seg);
+    q('[data-laps]').innerHTML=laps.map((t,i)=>{const s=seg[i];const cls=detailed&&laps.length>1?(s===mn?'fast':s===mx?'slow':''):'';
+      return detailed?`<li class="${cls}"><span>랩 ${i+1}</span><span class="num">+${f(s)}</span><span class="lg">${f(t)}</span></li>`:`<li><span>랩 ${i+1}</span><span class="num">${f(t)}</span></li>`;}).reverse().join('');}
+  q('[data-go]').onclick=e=>{if(on){acc+=Date.now()-st;on=false;e.target.textContent='계속';}else{st=Date.now();on=true;e.target.textContent='정지';}};
+  q('[data-lap]').onclick=()=>{if(!cur())return;laps.push(cur());drawLaps();};
+  q('[data-rs]').onclick=()=>{acc=0;on=false;laps=[];q('[data-go]').textContent='시작';drawLaps();};
+  drawLaps();
+  setInterval(()=>{const ms=cur();q('[data-t]').innerHTML=pad(Math.floor(ms/60000))+':'+pad(Math.floor(ms/1000)%60)+'<small>.'+Math.floor(ms%1000/100)+'</small>';},100);
+}
+sw(document.getElementById('s1'),false);sw(document.getElementById('s2'),true);
+})();
+</script>

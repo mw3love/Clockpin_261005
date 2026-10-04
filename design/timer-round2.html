@@ -1,0 +1,243 @@
+<title>타이머 확장 2차 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;600&family=Jua&display=swap">
+<style>
+/* Layout: page chrome is theme-aware; each of the 3 popups commits to its own single look (that look is what is being compared) */
+:root{
+  --bg:#EEF0F5; --ink:#141824; --muted:#636B7E; --line:#DDE1EA; --accent:#3557E6; --card:#FFFFFF;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0E1015;--ink:#ECEEF4;--muted:#9299AB;--line:#2A2F3B;--accent:#7E96FF;--card:#191C25;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1015;--ink:#ECEEF4;--muted:#9299AB;--line:#2A2F3B;--accent:#7E96FF;--card:#191C25;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55;padding:40px 16px 64px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+.intro{max-width:68ch;display:flex;flex-direction:column;gap:8px}
+.intro .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.intro h1{font-size:28px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+.intro p{margin:0;color:var(--muted)}
+.intro a{color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:32px 24px;align-items:start}
+.cand{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cand h2{margin:0;font-size:17px;font-weight:600;display:flex;gap:10px;align-items:baseline}
+.cand h2 .tag{font-family:var(--f-num);font-size:13px;color:var(--accent);font-weight:600}
+.notes{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);max-width:330px}
+.notes b{color:var(--ink);font-weight:600}
+.notes p{margin:0}
+.pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;max-width:760px;display:flex;flex-direction:column;gap:10px}
+.pick h2{margin:0;font-size:17px;font-weight:600}
+.pick ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;color:var(--muted)}
+.pick li b{color:var(--ink);font-weight:600}
+
+/* ---------- popup shell (all looks read these vars) ---------- */
+.pop{width:320px;max-width:100%;background:var(--p-bg);color:var(--p-ink);border:1px solid var(--p-line);border-radius:var(--p-r);box-shadow:var(--p-shadow);overflow:hidden;font-family:var(--p-body)}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 6px;gap:8px}
+.now{display:flex;flex-direction:column;line-height:1.2}
+.now .lbl{font-size:11px;color:var(--p-muted)}
+.now .clock{font-family:var(--p-num);font-size:15px;font-variant-numeric:tabular-nums}
+.seg{display:flex;background:var(--p-sunk);border-radius:calc(var(--p-btn-r) + 2px);padding:2px}
+.seg button{all:unset;cursor:pointer;font-size:12px;padding:4px 10px;border-radius:var(--p-btn-r);color:var(--p-muted)}
+.seg button[aria-selected="true"]{background:var(--p-seg-on);color:var(--p-ink)}
+.pop button:focus-visible{outline:2px solid var(--p-accent);outline-offset:2px}
+.pane{padding:4px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.endline{font-size:12.5px;color:var(--p-muted);text-align:center;min-height:20px}
+.endline b{color:var(--p-ink);font-weight:600;font-family:var(--p-num)}
+.go{all:unset;cursor:pointer;text-align:center;background:var(--p-accent);color:var(--p-on-accent);font-weight:600;border-radius:var(--p-btn-r);padding:11px 0;font-size:14px}
+.go[disabled]{opacity:.35;cursor:not-allowed}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chip{all:unset;cursor:pointer;font-size:12.5px;padding:5px 11px;border-radius:var(--p-chip-r);background:var(--p-sunk);color:var(--p-ink)}
+.chip:hover{color:var(--p-accent)}
+.row{display:flex;gap:8px}
+.btn{all:unset;cursor:pointer;flex:1;text-align:center;padding:9px 0;border-radius:var(--p-btn-r);background:var(--p-sunk);font-size:13.5px}
+.btn.primary{background:var(--p-accent);color:var(--p-on-accent)}
+.ring{position:relative;width:184px;height:184px;margin:4px auto 0}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .track{fill:none;stroke:var(--p-sunk);stroke-width:9}
+.ring .prog{fill:none;stroke:var(--p-accent);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.ring .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ring .left{font-family:var(--p-num);font-size:34px;font-variant-numeric:tabular-nums}
+.ring .at{font-size:12px;color:var(--p-muted)}
+.pop.done .ring .prog{stroke:var(--p-done)}
+.pop.done .ring .left{color:var(--p-done);animation:blink 1s steps(2) infinite}
+.donemsg{display:none;text-align:center;font-weight:600;color:var(--p-done)}
+.pop.done .donemsg{display:block}
+@keyframes blink{50%{opacity:.25}}
+.swtime{font-family:var(--p-num);font-size:44px;text-align:center;font-variant-numeric:tabular-nums;padding:22px 0 6px}
+.swtime small{font-size:24px;color:var(--p-muted)}
+.laps{list-style:none;margin:0;padding:0;max-height:96px;overflow:auto;font-family:var(--p-num);font-size:12.5px;color:var(--p-muted)}
+.laps li{display:flex;justify-content:space-between;padding:3px 2px;border-bottom:1px solid var(--p-line)}
+
+/* wheel */
+.wheels{position:relative;display:flex;justify-content:center;align-items:center;gap:2px;padding-top:4px}
+.band{position:absolute;left:4px;right:4px;z-index:0;pointer-events:none}
+.wcolw{display:flex;flex-direction:column;align-items:center;z-index:1}
+.wcol{width:70px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent)}
+.wcol::-webkit-scrollbar{display:none}
+.wcol div{text-align:center;scroll-snap-align:center;font-family:var(--p-num);font-variant-numeric:tabular-nums;color:var(--p-ink);transform-origin:center}
+.wcolw small{font-size:11px;color:var(--p-muted)}
+.wsep{font-family:var(--p-num);color:var(--p-muted);z-index:1}
+
+/* ===== Look 1: 맑은 흰색 ===== */
+.l1{--p-bg:#FFFFFF;--p-ink:#151922;--p-muted:#6B7385;--p-line:#E3E6ED;--p-sunk:#F2F4F8;--p-seg-on:#FFFFFF;--p-accent:#2F62F5;--p-on-accent:#FFFFFF;--p-done:#E0452B;
+  --p-r:14px;--p-btn-r:9px;--p-chip-r:99px;--p-shadow:0 1px 2px rgba(20,24,36,.06),0 14px 34px rgba(20,24,36,.12);
+  --p-body:"IBM Plex Sans KR",system-ui,sans-serif;--p-num:"IBM Plex Mono",ui-monospace,monospace}
+.l1 .seg button[aria-selected="true"]{box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.l1 .band{background:#EEF2FF;border-radius:9px}
+.l1 .wcol div{font-size:22px}
+.l1 .wsep{font-size:20px}
+
+/* ===== Look 2: 그래파이트 드럼 ===== */
+.l2{--p-bg:linear-gradient(180deg,#26282D,#1A1B1F);--p-ink:#EDEBE4;--p-muted:#8C8E95;--p-line:#33363C;--p-sunk:#2D3035;--p-seg-on:#3A3D43;--p-accent:#F2A93B;--p-on-accent:#1A1B1F;--p-done:#FF6A4D;
+  --p-r:10px;--p-btn-r:6px;--p-chip-r:6px;--p-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 16px 40px rgba(0,0,0,.45);
+  --p-body:"IBM Plex Sans KR",system-ui,sans-serif;--p-num:"JetBrains Mono",ui-monospace,monospace}
+.l2{background:linear-gradient(180deg,#26282D,#1A1B1F)}
+.l2 .ring .track{stroke:#2D3035}
+.l2 .band{border-top:1px solid rgba(242,169,59,.55);border-bottom:1px solid rgba(242,169,59,.55);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0))}
+.l2 .wheels{perspective:420px}
+.l2 .wcol div{font-size:26px;font-weight:300}
+.l2 .wcol div.on{color:#F2A93B;font-weight:400}
+.l2 .wsep{font-size:22px}
+.l2 .chip{border:1px solid #3A3D43;background:transparent}
+.l2 .go{letter-spacing:.04em}
+
+/* ===== Look 3: 말랑 민트 ===== */
+.l3{--p-bg:#EAF6F1;--p-ink:#1E3A33;--p-muted:#5E7B73;--p-line:#D2E9E0;--p-sunk:#FFFFFF;--p-seg-on:#1E3A33;--p-accent:#FF6F5B;--p-on-accent:#FFFFFF;--p-done:#E2463A;
+  --p-r:22px;--p-btn-r:14px;--p-chip-r:99px;--p-shadow:0 14px 34px rgba(30,58,51,.16);
+  --p-body:"IBM Plex Sans KR",system-ui,sans-serif;--p-num:"Jua","IBM Plex Sans KR",sans-serif}
+.l3 .seg button[aria-selected="true"]{color:#EAF6F1}
+.l3 .band{background:#FFFFFF;border-radius:16px;box-shadow:0 4px 12px rgba(30,58,51,.08)}
+.l3 .wcol div{font-size:32px}
+.l3 .wsep{font-size:26px}
+.l3 .go{font-size:16px;padding:13px 0;box-shadow:0 6px 14px rgba(255,111,91,.35)}
+.l3 .chip{box-shadow:0 2px 6px rgba(30,58,51,.06)}
+.l3 .ring .left{font-size:40px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">2차 시안 · A 회전 다이얼의 겉모습 비교</span>
+    <h1>같은 다이얼, 세 가지 분위기</h1>
+    <p>동작은 모두 1차의 A와 같아요. 시·분·초 칸 위에서 휠을 굴리거나 끌면 되고, 아래 버튼으로 자주 쓰는 시간을 바로 고를 수 있어요. 이번에는 <b>색, 글꼴, 다이얼 모양</b>만 비교해 주세요.</p>
+  </header>
+
+  <section class="grid">
+    <article class="cand">
+      <h2><span class="tag">A1</span>맑은 흰색</h2>
+      <div class="pop l1" id="p1"></div>
+      <div class="notes">
+        <p><b>분위기:</b> 아이폰 기본 타이머처럼 깔끔하고 무난해요. 크롬의 흰 메뉴와도 잘 어울려요.</p>
+        <p><b>다이얼:</b> 납작한 목록에 가운데 줄만 연하게 칠했어요.</p>
+        <p><b>아쉬운 점:</b> 개성이 약해서 다른 타이머 앱과 비슷해 보일 수 있어요.</p>
+      </div>
+    </article>
+    <article class="cand">
+      <h2><span class="tag">A2</span>그래파이트 드럼</h2>
+      <div class="pop l2" id="p2"></div>
+      <div class="notes">
+        <p><b>분위기:</b> 어두운 금속판 위의 기계식 계기 느낌이에요. 호박색 포인트가 들어가요.</p>
+        <p><b>다이얼:</b> 숫자가 원통에 붙어 돌아가듯 위아래로 기울어져요. 돌리는 느낌이 가장 강해요.</p>
+        <p><b>아쉬운 점:</b> 밝은 화면 위에 뜨면 팝업이 혼자 튀어 보일 수 있어요.</p>
+      </div>
+    </article>
+    <article class="cand">
+      <h2><span class="tag">A3</span>말랑 민트</h2>
+      <div class="pop l3" id="p3"></div>
+      <div class="notes">
+        <p><b>분위기:</b> 둥근 글꼴과 큰 숫자를 써서 친근하고 가벼워요.</p>
+        <p><b>다이얼:</b> 가운데 흰 알약 칸에 큰 숫자가 들어가요. 숫자가 커서 멀리서도 잘 보여요.</p>
+        <p><b>아쉬운 점:</b> 업무용으로 쓰기엔 조금 장난스러워 보일 수 있어요.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="pick">
+    <h2>이렇게 골라 주시면 돼요</h2>
+    <ul>
+      <li><b>하나만 골라도 되고 섞어도 돼요.</b> 예: "A2의 드럼 다이얼에 A1의 흰 바탕"</li>
+      <li><b>크기 느낌도 알려 주세요.</b> 예: "숫자는 A3만큼 컸으면", "팝업이 더 작았으면"</li>
+      <li><b>3차에서는</b> 고른 디자인으로 우클릭 메뉴, 시간이 됐을 때 알림 화면, 스톱워치 화면을 다듬을 거예요.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+const pad=n=>String(n).padStart(2,'0');
+function fmtClock(d,sec){let h=d.getHours();const ap=h<12?'오전':'오후';h=h%12||12;return ap+' '+h+':'+pad(d.getMinutes())+(sec?':'+pad(d.getSeconds()):'');}
+function fmtDur(s){s=Math.max(0,Math.ceil(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?h+':'+pad(m)+':'+pad(x):pad(m)+':'+pad(x);}
+function durKo(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;const p=[];if(h)p.push(h+'시간');if(m)p.push(m+'분');if(x)p.push(x+'초');return p.join(' ')||'0초';}
+let actx=null;
+function beep(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const t=actx.currentTime;for(let i=0;i<3;i++){const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;o.connect(g);g.connect(actx.destination);const s=t+i*0.32;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.18,s+.02);g.gain.linearRampToValueAtTime(0,s+.2);o.start(s);o.stop(s+.22);}}catch(e){}}
+const popups=[];const C=2*Math.PI*78;
+
+function makePopup(root,opt){
+  const ih=opt.ih;
+  const col=(u,n,lab)=>`<div class="wcolw"><div class="wcol" data-u="${u}" style="height:${ih*5}px;padding-block:${ih*2}px">${Array.from({length:n},(_,i)=>`<div style="height:${ih}px;line-height:${ih}px">${pad(i)}</div>`).join('')}</div><small>${lab}</small></div>`;
+  root.innerHTML=`
+  <header class="ph"><div class="now"><span class="lbl">지금</span><span class="clock" data-clock></span></div>
+  <div class="seg" role="tablist"><button role="tab" data-tab="timer" aria-selected="true">타이머</button><button role="tab" data-tab="sw" aria-selected="false">스톱워치</button></div></header>
+  <section class="pane setup">
+    <div class="wheels"><div class="band" style="top:${4+ih*2}px;height:${ih}px"></div>${col('h',24,'시간')}<span class="wsep" style="margin-top:-18px">:</span>${col('m',60,'분')}<span class="wsep" style="margin-top:-18px">:</span>${col('s',60,'초')}</div>
+    <div class="chips"><button class="chip" data-p="60">1분</button><button class="chip" data-p="300">5분</button><button class="chip" data-p="600">10분</button><button class="chip" data-p="1500">25분</button><button class="chip" data-p="3600">1시간</button></div>
+    <div class="endline" data-end></div><button class="go" data-go>시작</button></section>
+  <section class="pane run" hidden>
+    <div class="ring"><svg viewBox="0 0 184 184"><circle class="track" cx="92" cy="92" r="78"/><circle class="prog" cx="92" cy="92" r="78" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+    <div class="mid"><div class="left" data-left>00:00</div><div class="at" data-at></div></div></div>
+    <div class="donemsg">시간이 됐어요</div>
+    <div class="row"><button class="btn" data-pause>일시정지</button><button class="btn" data-cancel>취소</button></div>
+  </section>
+  <section class="pane sw" hidden>
+    <div class="swtime" data-sw>00:00<small>.0</small></div>
+    <div class="row"><button class="btn primary" data-swgo>시작</button><button class="btn" data-swlap>랩</button><button class="btn" data-swreset>초기화</button></div>
+    <ol class="laps" data-laps></ol>
+  </section>`;
+  const q=s=>root.querySelector(s);
+  const P={root,q,run:null,sw:{acc:0,start:0,on:false,laps:[]},tab:'timer'};
+  const cols={h:q('[data-u=h]'),m:q('[data-u=m]'),s:q('[data-u=s]')};
+  const val=c=>Math.round(c.scrollTop/ih);
+  P.getSeconds=()=>val(cols.h)*3600+val(cols.m)*60+val(cols.s);
+  function shade(c){const items=c.children,center=c.scrollTop+ih*2;const v=val(c);
+    for(let i=Math.max(0,v-4);i<Math.min(items.length,v+5);i++){const off=(i*ih-c.scrollTop)/ih;const el=items[i];
+      el.classList.toggle('on',i===v);
+      if(opt.drum){const a=Math.max(-80,Math.min(80,off*-24));el.style.transform=`rotateX(${a}deg) translateZ(${-Math.abs(off)*4}px)`;el.style.opacity=1-Math.min(.75,Math.abs(off)*.22);}}}
+  const setAll=(sec,smooth)=>{const v={h:Math.floor(sec/3600),m:Math.floor(sec%3600/60),s:sec%60};for(const k in cols)cols[k].scrollTo({top:v[k]*ih,behavior:smooth?'smooth':'auto'});};
+  Object.values(cols).forEach(c=>c.addEventListener('scroll',()=>{shade(c);P.refresh();},{passive:true}));
+  q('.chips').onclick=e=>{const b=e.target.closest('[data-p]');if(b)setAll(+b.dataset.p,true);};
+  const setup=q('.setup'),run=q('.run'),sw=q('.sw');
+  function show(){setup.hidden=!(P.tab==='timer'&&!P.run);run.hidden=!(P.tab==='timer'&&P.run);sw.hidden=P.tab!=='sw';}
+  root.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{P.tab=b.dataset.tab;root.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));show();});
+  P.refresh=()=>{const s=P.getSeconds(),end=q('[data-end]');
+    if(s>0){end.innerHTML=`${durKo(s)} 후 · <b>${fmtClock(new Date(Date.now()+s*1000),s%60!==0)}</b>에 알림`;}else end.textContent='시간을 정해 주세요';
+    q('[data-go]').disabled=!(s>0);};
+  P.start=secs=>{secs=secs||P.getSeconds();if(!(secs>0))return;P.run={total:secs,endAt:Date.now()+secs*1000,paused:false,remain:secs,done:false};root.classList.remove('done');q('[data-pause]').textContent='일시정지';show();P.tick();};
+  q('[data-go]').onclick=()=>P.start();
+  q('[data-cancel]').onclick=()=>{P.run=null;root.classList.remove('done');show();P.refresh();};
+  q('[data-pause]').onclick=()=>{const r=P.run;if(!r)return;if(r.done){P.start(r.total);return;}
+    if(r.paused){r.endAt=Date.now()+r.remain*1000;r.paused=false;q('[data-pause]').textContent='일시정지';}
+    else{r.remain=(r.endAt-Date.now())/1000;r.paused=true;q('[data-pause]').textContent='계속';}P.tick();};
+  P.tick=()=>{const r=P.run;if(!r)return;
+    if(!r.paused&&!r.done){r.remain=(r.endAt-Date.now())/1000;if(r.remain<=0){r.remain=0;r.done=true;root.classList.add('done');q('[data-pause]').textContent='한 번 더';beep();}}
+    q('[data-cancel]').textContent=r.done?'닫기':'취소';
+    q('[data-left]').textContent=fmtDur(r.remain);
+    q('.prog').setAttribute('stroke-dashoffset',C*(1-r.remain/r.total));
+    q('[data-at]').textContent=r.done?'끝':r.paused?'일시정지됨':fmtClock(new Date(r.endAt),r.total%60!==0)+'에 알림';};
+  const S=P.sw;const swNow=()=>S.acc+(S.on?Date.now()-S.start:0);
+  P.swTick=()=>{const ms=swNow();q('[data-sw]').innerHTML=fmtDur(Math.floor(ms/1000))+'<small>.'+Math.floor(ms%1000/100)+'</small>';};
+  q('[data-swgo]').onclick=e=>{if(S.on){S.acc+=Date.now()-S.start;S.on=false;e.target.textContent='계속';}else{S.start=Date.now();S.on=true;e.target.textContent='정지';}};
+  q('[data-swlap]').onclick=()=>{if(!swNow())return;S.laps.unshift(swNow());q('[data-laps]').innerHTML=S.laps.map((ms,i)=>`<li><span>랩 ${S.laps.length-i}</span><span>${fmtDur(Math.floor(ms/1000))}.${Math.floor(ms%1000/100)}</span></li>`).join('');};
+  q('[data-swreset]').onclick=()=>{S.acc=0;S.on=false;S.laps=[];q('[data-laps]').innerHTML='';q('[data-swgo]').textContent='시작';};
+  requestAnimationFrame(()=>{setAll(600);Object.values(cols).forEach(shade);P.refresh();});
+  popups.push(P);
+}
+makePopup(document.getElementById('p1'),{ih:36});
+makePopup(document.getElementById('p2'),{ih:38,drum:true});
+makePopup(document.getElementById('p3'),{ih:46});
+function loop(){const c=fmtClock(new Date(),true);document.querySelectorAll('[data-clock]').forEach(e=>e.textContent=c);
+  popups.forEach(P=>{P.tick();P.swTick();if(!P.run)P.refresh();});}
+loop();setInterval(loop,200);
+})();
+</script>

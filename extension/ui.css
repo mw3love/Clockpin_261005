@@ -1,0 +1,25 @@
+/* A3 말랑 민트 — 팝업·알림 창·설정이 같이 쓴다 */
+@font-face { font-family: "Jua"; src: url("fonts/jua-subset.woff2") format("woff2"); font-display: block; }
+:root {
+  --bg: #EAF6F1; --ink: #1E3A33; --muted: #5E7B73; --line: #D2E9E0; --white: #FFFFFF;
+  --coral: #FF6F5B; --done: #E2463A;
+  --round: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.5; }
+button { font: inherit; }
+button:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.row { display: flex; gap: 8px; }
+.b { all: unset; cursor: pointer; flex: 1; text-align: center; padding: 10px 0; border-radius: 14px; background: var(--white); font-size: 13.5px; color: var(--ink); }
+.b:hover { box-shadow: 0 0 0 2px var(--line) inset; }
+.b.pri { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255, 111, 91, .35); }
+.go { all: unset; cursor: pointer; text-align: center; background: var(--coral); color: #fff; font-weight: 600; border-radius: 14px; padding: 13px 0; font-size: 16px; box-shadow: 0 6px 14px rgba(255, 111, 91, .35); }
+.go[disabled] { opacity: .35; cursor: not-allowed; box-shadow: none; }
+.at { font-size: 12.5px; color: var(--muted); text-align: center; min-height: 19px; }
+.at b { color: var(--ink); font-family: var(--round); font-weight: 400; font-size: 14px; }
+@keyframes blink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

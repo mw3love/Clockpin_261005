@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>빠른 타이머</title>
+<link rel="stylesheet" href="ui.css">
+<style>
+  body { width: 320px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .ph { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .now { display: flex; flex-direction: column; line-height: 1.2; }
+  .now .l { font-size: 11px; color: var(--muted); }
+  .now .c { font-family: var(--round); font-size: 16px; font-variant-numeric: tabular-nums; }
+  .right { display: flex; align-items: center; gap: 6px; }
+  .seg { display: flex; background: var(--white); border-radius: 16px; padding: 2px; }
+  .seg button { all: unset; cursor: pointer; font-size: 12px; padding: 4px 10px; border-radius: 14px; color: var(--muted); }
+  .seg button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+  .gear { all: unset; cursor: pointer; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); }
+  .gear:hover { background: var(--white); }
+  .gear svg { width: 16px; height: 16px; }
+  .pane { display: flex; flex-direction: column; gap: 12px; }
+
+  /* 다이얼 */
+  .wheels { position: relative; display: flex; justify-content: center; align-items: center; gap: 2px; padding-top: 4px; }
+  .band { position: absolute; left: 4px; right: 4px; top: 96px; height: 46px; background: var(--white); border-radius: 16px; box-shadow: 0 4px 12px rgba(30, 58, 51, .08); pointer-events: none; }
+  .wcolw { display: flex; flex-direction: column; align-items: center; z-index: 1; }
+  .wcol { width: 70px; height: 230px; padding-block: 92px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent); mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent); }
+  .wcol::-webkit-scrollbar { display: none; }
+  .wcol div { height: 46px; line-height: 46px; text-align: center; scroll-snap-align: center; font-family: var(--round); font-size: 32px; cursor: ns-resize; }
+  .wcolw small { font-size: 11px; color: var(--muted); }
+  .wsep { font-family: var(--round); font-size: 26px; color: var(--muted); z-index: 1; margin-top: -18px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .chip { all: unset; cursor: pointer; font-size: 12.5px; padding: 5px 11px; border-radius: 99px; background: var(--white); box-shadow: 0 2px 6px rgba(30, 58, 51, .06); }
+  .chip:hover { color: var(--coral); }
+
+  /* 링(R1) */
+  .ring { position: relative; width: 190px; height: 190px; margin: 4px auto 0; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring .tr { fill: none; stroke: var(--white); stroke-width: 12; }
+  .ring .pg { fill: none; stroke: var(--coral); stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset .2s linear; }
+  .ring .mid { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .ring .left { font-family: var(--round); font-size: 44px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ring .sub { font-size: 12px; color: var(--muted); }
+  body.done .ring .pg { stroke: var(--done); }
+  body.done .ring .left { color: var(--done); animation: blink 1s steps(2) infinite; }
+  body.done .ring .sub { color: var(--done); font-weight: 600; }
+
+  /* 스톱워치(S1) */
+  .swt { font-family: var(--round); font-size: 52px; text-align: center; padding-top: 18px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .swt small { font-size: 28px; color: var(--muted); }
+  .laps { list-style: none; margin: 0; padding: 0; max-height: 132px; overflow: auto; font-size: 12.5px; }
+  .laps li { display: flex; justify-content: space-between; padding: 5px 8px; border-radius: 10px; }
+  .laps li:nth-child(odd) { background: rgba(255, 255, 255, .6); }
+  .laps li span:first-child { color: var(--muted); }
+  .laps li span:last-child { font-family: var(--round); font-size: 14px; }
+</style>
+</head>
+<body>
+  <header class="ph">
+    <div class="now"><span class="l">지금</span><span class="c" id="clock"></span></div>
+    <div class="right">
+      <div class="seg" role="tablist">
+        <button role="tab" data-tab="timer" aria-selected="true">타이머</button>
+        <button role="tab" data-tab="sw" aria-selected="false">스톱워치</button>
+      </div>
+      <button class="gear" id="opts" title="설정" aria-label="설정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="pane" id="setup">
+    <div class="wheels">
+      <div class="band"></div>
+      <div class="wcolw"><div class="wcol" id="wh" tabindex="0" aria-label="시간"></div><small>시간</small></div>
+      <span class="wsep">:</span>
+      <div class="wcolw"><div class="wcol" id="wm" tabindex="0" aria-label="분"></div><small>분</small></div>
+      <span class="wsep">:</span>
+      <div class="wcolw"><div class="wcol" id="ws" tabindex="0" aria-label="초"></div><small>초</small></div>
+    </div>
+    <div class="chips">
+      <button class="chip" data-p="60">1분</button>
+      <button class="chip" data-p="300">5분</button>
+      <button class="chip" data-p="600">10분</button>
+      <button class="chip" data-p="1500">25분</button>
+      <button class="chip" data-p="3600">1시간</button>
+    </div>
+    <div class="at" id="endline"></div>
+    <button class="go" id="go">시작</button>
+  </section>
+
+  <section class="pane" id="run" hidden>
+    <div class="ring">
+      <svg viewBox="0 0 190 190"><circle class="tr" cx="95" cy="95" r="80"/><circle class="pg" id="pg" cx="95" cy="95" r="80"/></svg>
+      <div class="mid"><div class="left" id="left">00:00</div><div class="sub" id="sub"></div></div>
+    </div>
+    <div class="row"><button class="b" id="ba"></button><button class="b" id="bb"></button><button class="b" id="bc"></button></div>
+  </section>
+
+  <section class="pane" id="sw" hidden>
+    <div class="swt" id="swt">00:00<small>.0</small></div>
+    <div class="row"><button class="b pri" id="swgo">시작</button><button class="b" id="swlap">랩</button><button class="b" id="swreset">초기화</button></div>
+    <ol class="laps" id="laps"></ol>
+  </section>
+
+  <script src="common.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
