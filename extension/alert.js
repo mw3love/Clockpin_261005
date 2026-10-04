@@ -9,7 +9,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 
 chrome.storage.local.get('timer').then(({ timer }) => {
   if (!timer) return;
   doneAt = timer.doneAt || doneAt;
-  document.getElementById('info').innerHTML = `${durKo(timer.total)} 타이머 · <b>${fmtClock(new Date(doneAt))}</b>에 끝남`;
+  document.getElementById('info').innerHTML = `<b>${fmtClock(new Date(timer.endAt))}</b> 타이머`;
 });
 
 setInterval(() => {

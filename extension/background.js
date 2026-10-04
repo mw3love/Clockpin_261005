@@ -1,10 +1,10 @@
 // 타이머의 실제 시간은 여기서만 관리한다. 팝업은 닫히면 사라지므로 화면 역할만 한다.
 // 상태(chrome.storage.local)
-//   timer: { total(초), status: 'running'|'paused'|'done', endAt(ms), remain(ms, 일시정지 때), doneAt }
+//   timer: { total(초), status: 'running'|'done', endAt(ms), doneAt }
 //   sw:    { acc(ms), start(ms), on, laps: [누적 ms] }
 importScripts('common.js');
 
-const COLORS = { running: '#FF6F5B', paused: '#8AA39B', done: '#E2463A', sw: '#1E3A33' };
+const COLORS = { running: '#FF6F5B', done: '#E2463A', sw: '#1E3A33' };
 let secTimer = null, endTimer = null, tickTimer = null, finishing = false;
 
 async function load() {
@@ -57,7 +57,6 @@ async function updateBadge() {
   let text = '', color = COLORS.running;
   if (timer) {
     if (timer.status === 'running') text = badgeText(timer.endAt - now);
-    else if (timer.status === 'paused') { text = badgeText(timer.remain); color = COLORS.paused; }
     else { text = '끝'; color = COLORS.done; }
   } else if (sw.on) {
     text = Math.floor((sw.acc + now - sw.start) / 60000) + 'm';
@@ -83,7 +82,7 @@ async function finish() {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
       title: '시간 됐어요',
-      message: `${durKo(timer.total)} 타이머가 끝났어요 · ${fmtClock(new Date())}`,
+      message: `${fmtClock(new Date(timer.endAt))} 타이머가 끝났어요`,
       requireInteraction: true,
       priority: 2,
       silent: s.sound,
@@ -139,24 +138,17 @@ async function handle(m) {
     case 'start':
       await stopAlerts();
       await chrome.storage.local.set({ timer: startTimer(m.secs) });
-      if (m.remember) {
-        const s = await getSettings();
-        await chrome.storage.local.set({ settings: { ...s, lastSecs: m.secs } });
+      break;
+    case 'startAt':
+      // 팝업 다이얼: 끝나는 시각을 직접 받는다(그 분의 0초)
+      if (m.endAt > now) {
+        await stopAlerts();
+        await chrome.storage.local.set({ timer: { total: Math.round((m.endAt - now) / 1000), endAt: m.endAt, status: 'running' } });
       }
-      break;
-    case 'pause':
-      if (timer && timer.status === 'running')
-        await chrome.storage.local.set({ timer: { ...timer, status: 'paused', remain: timer.endAt - now } });
-      break;
-    case 'resume':
-      if (timer && timer.status === 'paused')
-        await chrome.storage.local.set({ timer: { ...timer, status: 'running', endAt: now + timer.remain } });
       break;
     case 'add':
       if (timer && timer.status === 'running')
         await chrome.storage.local.set({ timer: { ...timer, total: timer.total + m.secs, endAt: timer.endAt + m.secs * 1000 } });
-      else if (timer && timer.status === 'paused')
-        await chrome.storage.local.set({ timer: { ...timer, total: timer.total + m.secs, remain: timer.remain + m.secs * 1000 } });
       break;
     case 'snooze':
       await stopAlerts();
@@ -204,7 +196,6 @@ async function updateMenu() {
   await menuUpdate('sw', { title: sw.on ? '스톱워치 멈추기' : sw.acc ? '스톱워치 계속' : '스톱워치 시작' });
   let title = '지금 타이머 끄기';
   if (timer?.status === 'running') title += ` (${badgeText(timer.endAt - Date.now())} 남음)`;
-  else if (timer?.status === 'paused') title += ' (일시정지 중)';
   else if (timer?.status === 'done') title = '알림 끄기';
   await menuUpdate('cancel', { title, enabled: !!timer });
 }

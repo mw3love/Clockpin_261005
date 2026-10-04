@@ -1,0 +1,407 @@
+<title>타이머 확장 4차 시안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Jua&display=swap">
+<style>
+/* Layout: four decision rows (dark palette / time dial / ring center / toolbar icon); mocks carry their own palette via data-mt */
+:root{
+  --bg:#F1F4F3; --ink:#16201D; --muted:#5F6B68; --line:#DCE3E0; --card:#FFFFFF; --rec:#1E7A5E; --rec-soft:#DDF1E9;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --m-round:"Jua","IBM Plex Sans KR",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55;padding:40px 16px 64px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.intro{max-width:70ch;display:flex;flex-direction:column;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.25;margin:0;text-wrap:balance;font-weight:700}
+.intro p{margin:0;color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sec-h{display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.sec-h h2{margin:0;font-size:20px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+.sec-h h2 .k{font-family:var(--f-num);font-size:13px;color:var(--muted);font-weight:600}
+.sec-h p{margin:0;color:var(--muted)}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start}
+.opt{display:flex;flex-direction:column;gap:12px;min-width:0}
+.opt h3{margin:0;font-size:15px;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.opt h3 .tag{font-family:var(--f-num);font-size:12.5px;color:var(--muted);font-weight:600}
+.rec{font-size:11px;font-weight:600;color:var(--rec);background:var(--rec-soft);padding:1px 8px;border-radius:99px}
+.opt p,.note{margin:0;font-size:13px;color:var(--muted);max-width:360px}
+.opt p b,.note b{color:var(--ink);font-weight:600}
+.mt{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.mt button{all:unset;cursor:pointer;font-size:12.5px;color:var(--ink);border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 12px}
+.mt button[aria-pressed="true"]{border-color:var(--rec);color:var(--rec);background:var(--rec-soft);font-weight:600}
+.mt button:focus-visible,.m button:focus-visible{outline:2px solid var(--rec);outline-offset:2px}
+.duo{display:flex;flex-direction:column;gap:14px}
+
+/* ---------- mock palettes ---------- */
+.m{--m-bg:#EAF6F1;--m-ink:#1E3A33;--m-muted:#5E7B73;--m-line:#D2E9E0;--m-surf:#FFFFFF;--m-coral:#FF6F5B;--m-done:#E2463A;--m-sh:rgba(30,58,51,.08);--m-pop-sh:rgba(30,58,51,.16);--m-tb:#DCEFE7;
+  background:var(--m-bg);color:var(--m-ink);font-family:var(--f-body)}
+.m[data-mt="soft"]{--m-bg:#DDEBE5;--m-ink:#1E3A33;--m-muted:#56706A;--m-line:#C9DDD5;--m-surf:#EEF5F2;--m-coral:#EE6553;--m-done:#D63F33;--m-tb:#D0E3DB}
+.m[data-mt="d1"]{--m-bg:#14231F;--m-ink:#DCEEE7;--m-muted:#8AA79F;--m-line:#25392F;--m-surf:#1F332D;--m-coral:#FF7C69;--m-done:#FF6B5E;--m-sh:rgba(0,0,0,.35);--m-pop-sh:rgba(0,0,0,.5);--m-tb:#1A2B26;color-scheme:dark}
+.m[data-mt="d2"]{--m-bg:#1B1C1E;--m-ink:#E6E8E7;--m-muted:#9CA19F;--m-line:#2C2E31;--m-surf:#26282B;--m-coral:#FF7C69;--m-done:#FF6B5E;--m-sh:rgba(0,0,0,.4);--m-pop-sh:rgba(0,0,0,.55);--m-tb:#232427;color-scheme:dark}
+
+.pop{width:320px;max-width:100%;border-radius:22px;box-shadow:0 14px 34px var(--m-pop-sh);overflow:hidden;padding:14px;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.now{display:flex;flex-direction:column;line-height:1.2}
+.now .l{font-size:11px;color:var(--m-muted)}
+.now .c{font-family:var(--m-round);font-size:16px;font-variant-numeric:tabular-nums}
+.seg{display:flex;background:var(--m-surf);border-radius:16px;padding:2px}
+.seg span{font-size:12px;padding:4px 10px;border-radius:14px;color:var(--m-muted)}
+.seg span.on{background:var(--m-ink);color:var(--m-bg)}
+.row{display:flex;gap:8px}
+.b{all:unset;cursor:pointer;flex:1;text-align:center;padding:10px 0;border-radius:14px;background:var(--m-surf);font-size:13.5px;color:var(--m-ink)}
+.b:hover{box-shadow:0 0 0 2px var(--m-line) inset}
+.b.pri{background:var(--m-coral);color:#fff;box-shadow:0 6px 14px rgba(255,111,91,.3)}
+.go{all:unset;cursor:pointer;text-align:center;background:var(--m-coral);color:#fff;font-weight:600;border-radius:14px;padding:13px 0;font-size:16px;box-shadow:0 6px 14px rgba(255,111,91,.3)}
+.go[disabled]{opacity:.35;cursor:not-allowed;box-shadow:none}
+.at{font-size:12.5px;color:var(--m-muted);text-align:center;min-height:19px}
+.at b{color:var(--m-ink);font-family:var(--m-round);font-weight:400;font-size:14px}
+.tmr{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--m-coral);border-radius:6px;padding:0 6px;margin-right:4px;vertical-align:1px}
+
+/* dial */
+.wheels{position:relative;display:flex;justify-content:center;align-items:center;gap:2px;padding-top:4px}
+.band{position:absolute;left:4px;right:4px;top:96px;height:46px;background:var(--m-surf);border-radius:16px;box-shadow:0 4px 12px var(--m-sh);pointer-events:none}
+.wcolw{display:flex;flex-direction:column;align-items:center;z-index:1}
+.wcol{width:70px;height:230px;padding-block:92px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent)}
+.wcol.static{padding-block:0;overflow:hidden}
+.wcol::-webkit-scrollbar{display:none}
+.wcol div{height:46px;line-height:46px;text-align:center;scroll-snap-align:center;font-family:var(--m-round);font-size:32px;cursor:ns-resize;font-variant-numeric:tabular-nums}
+.wcolw small{font-size:11px;color:var(--m-muted)}
+.wsep{font-family:var(--m-round);font-size:26px;color:var(--m-muted);z-index:1;margin-top:-18px}
+.ko{font-size:12px;color:var(--m-muted);text-align:center;margin-top:-6px;display:flex;justify-content:center;align-items:center;gap:8px;min-height:22px}
+.live{font-size:10.5px;font-weight:600;color:var(--m-coral);display:inline-flex;align-items:center;gap:4px}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--m-coral);animation:blink 1.2s steps(2) infinite}
+.rs{all:unset;cursor:pointer;font-size:11.5px;color:var(--m-ink);background:var(--m-surf);border-radius:99px;padding:1px 9px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chip{all:unset;cursor:pointer;font-size:12.5px;padding:5px 11px;border-radius:99px;background:var(--m-surf);box-shadow:0 2px 6px var(--m-sh)}
+.chip:hover{color:var(--m-coral)}
+
+/* ring */
+.ring{position:relative;width:190px;height:190px;margin:4px auto 0}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .tr{fill:none;stroke:var(--m-surf);stroke-width:12}
+.ring .pg{fill:none;stroke:var(--m-coral);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .2s linear}
+.ring .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ring .big{font-family:var(--m-round);line-height:1;font-variant-numeric:tabular-nums}
+.ring .sub{font-size:12px;color:var(--m-muted)}
+.ring .sub b{font-family:var(--m-round);font-weight:400;font-size:15px;color:var(--m-ink)}
+.ring .cap{font-size:11px;color:var(--m-muted)}
+.done .ring .pg{stroke:var(--m-done)}
+.done .ring .big{color:var(--m-done);animation:blink 1s steps(2) infinite}
+
+/* alert window */
+.win{width:300px;max-width:100%;border-radius:16px;overflow:hidden;box-shadow:0 18px 40px var(--m-pop-sh)}
+.win .tb{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--m-tb)}
+.win .tb i{width:11px;height:11px;border-radius:50%;background:#FF5F57}.win .tb i+i{background:#FEBC2E}.win .tb i+i+i{background:#28C840}
+.win .tb span{flex:1;text-align:center;font-size:11.5px;color:var(--m-muted);margin-right:40px}
+.win .bd{padding:18px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.win .bell{width:54px;height:54px;border-radius:50%;background:var(--m-coral);display:grid;place-items:center;box-shadow:0 8px 18px rgba(255,111,91,.35)}
+.win .bell svg{width:28px;height:28px}
+.win .h{font-family:var(--m-round);font-size:30px}
+.win .row{width:100%;margin-top:8px}
+
+/* toolbar */
+.tbar{display:flex;align-items:center;gap:12px;border-radius:10px;padding:8px 12px;width:320px;max-width:100%}
+.tbar.lt{background:#F1F3F4}.tbar.dk{background:#35363A}
+.tbar .url{flex:1;min-width:0;height:26px;border-radius:13px;font-size:11.5px;line-height:26px;padding:0 12px;white-space:nowrap;overflow:hidden}
+.tbar.lt .url{background:#fff;color:#5F6368}.tbar.dk .url{background:#202124;color:#9AA0A6}
+.ticon{position:relative;width:28px;height:28px;display:grid;place-items:center;flex:none}
+.ticon img{width:16px;height:16px}
+.bdg{position:absolute;right:-6px;bottom:-4px;background:#FF6F5B;color:#fff;font-family:Arial,var(--f-body);font-size:10px;font-weight:700;line-height:14px;padding:0 3px;border-radius:4px}
+
+.pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;max-width:780px;display:flex;flex-direction:column;gap:10px}
+.pick h2{margin:0;font-size:17px}
+.pick ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;color:var(--muted)}
+.pick b{color:var(--ink)}
+.pick code{font-family:var(--f-num);font-size:13px;background:var(--rec-soft);color:var(--rec);padding:1px 6px;border-radius:4px}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+<style>
+.wcol.ap div{font-size:20px}
+.ring [data-cap]{font-size:14px;color:var(--m-ink)}
+.sel{font-size:11px;font-weight:600;color:#fff;background:var(--rec);padding:1px 8px;border-radius:99px}
+/* 직접 움직이는 다이얼: 브라우저 스크롤·스냅을 끄고 코드가 위치를 정한다 */
+.wcol.drag{scroll-snap-type:none;overflow-y:hidden;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.wcol.drag.grabbing{cursor:grabbing}
+.wcol.drag div{cursor:inherit}
+.wcol.drag:focus-visible{outline:2px solid var(--m-coral);outline-offset:-2px;border-radius:12px}
+.row .gap{flex:0 0 6px}
+.ib{all:unset;cursor:pointer;flex:0 0 42px;height:42px;border-radius:50%;background:var(--m-surf);color:var(--m-muted);display:grid;place-items:center}
+.ib:hover{color:var(--m-done);box-shadow:0 0 0 2px var(--m-line) inset}
+.ib svg{width:18px;height:18px}
+.tryline{font-size:12px;color:var(--muted)}
+</style>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="ix" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="iundo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="ireset" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4 4v4.5h4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">4차 시안 · 고친 판 2 · L1 · D2 · R4a · 오전/오후 다이얼</span>
+    <h1>끝나는 시각을 시·분으로 고르기</h1>
+    <p>다이얼을 휠(천천히 1칸에 1분, 빨리 돌리면 가속), 드래그, 클릭, 키보드로 움직일 수 있게 바꿨어요. 취소 아이콘은 세 가지를 나란히 놓았어요. 직접 돌려 보고 눌러 보세요.</p>
+  </header>
+
+  <!-- T dial -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">T</span>끝나는 시각 다이얼</h2>
+      <p>네 가지 방법으로 움직일 수 있어요. 시 칸을 12로 넘기거나 12에서 빠져나오면 오전/오후가 저절로 바뀌어요. 이미 지난 시각을 고르면 「내일」이 붙어요.</p>
+      <div class="mt" data-mtbar><span>미리보기 색:</span></div></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">T2</span>오전/오후 · 시 · 분 <span class="sel">선택</span></h3>
+        <div class="m pop" data-mtl id="setup"></div>
+        <p><b>시작</b>을 누르면 아래 R4a 링이 그 시각을 향해 돌아가요.</p>
+      </div>
+      <div class="opt"><h3><span class="tag">해 보기</span>움직이는 방법</h3>
+        <p><b>휠:</b> 천천히 돌리면 한 칸에 딱 1줄. 빨리 돌리면 2줄, 3줄씩 점점 빨라지고, 멈추면 몇 줄 더 미끄러지다 서요. 트랙패드는 쓸어 올린 거리만큼 넘어가요.</p>
+        <p><b>드래그:</b> 숫자를 잡고 위아래로 끌어요. 놓으면 가까운 숫자에 맞춰 멈추고, 휙 던지면 조금 더 굴러가요.</p>
+        <p><b>클릭:</b> 위아래 흐린 숫자를 누르면 그 숫자로 가요. 오전/오후는 가운데를 눌러도 바뀌어요.</p>
+        <p><b>키보드:</b> 다이얼을 한 번 누른 뒤 ↑↓ 키로 1칸씩 움직여요.</p>
+        <p class="tryline" data-log>방금 휠 신호: 아직 없음</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- R ring -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">R</span>진행 중 화면 · 취소 아이콘 비교</h2>
+      <p>「+1분」「+5분」은 글자로 두고, 취소만 동그란 아이콘으로 바꿨어요. 실수로 누르지 않게 조금 떨어뜨렸고, 마우스를 올리면 "타이머 취소"가 떠요. 세 안 중 하나를 골라 주세요. 아이콘을 누르면 예시 타이머가 처음부터 다시 돌아요.</p>
+      <div class="mt" data-mtbar><span>미리보기 색:</span></div></div>
+    <div class="opts">
+      <div class="opt"><h3><span class="tag">X1</span>✕ 아이콘 <span class="rec">추천</span></h3>
+        <div class="m pop" data-mtl data-run="ix"></div>
+        <p>"끄기·없애기"로 가장 헷갈림 없이 읽혀요.</p></div>
+      <div class="opt"><h3><span class="tag">X3</span>되돌리기 ↶</h3>
+        <div class="m pop" data-mtl data-run="iundo"></div>
+        <p>보통 "방금 한 것 취소"로 읽혀요. 옆의 「+5분」만 취소된다고 생각하기 쉬워요.</p></div>
+      <div class="opt"><h3><span class="tag">X4</span>원형 화살표 ↺</h3>
+        <div class="m pop" data-mtl data-run="ireset"></div>
+        <p>"처음 설정 화면으로"라는 뜻이 잘 맞아요. 다만 "같은 타이머 다시 시작"으로 읽힐 수도 있어요.</p></div>
+      <div class="opt"><h3><span class="tag">N2</span>끝났을 때 알림 창</h3>
+        <div class="m win" data-mtl><div class="tb"><i></i><i></i><i></i><span>타이머</span></div><div class="bd"><div class="bell"><svg><use href="#bell"/></svg></div><div class="h">시간 됐어요!</div><div class="at"><b data-endko></b> 타이머</div><div class="row"><button class="b">1분 더</button><button class="b">5분 더</button><button class="b pri">끄기</button></div></div></div>
+        <p>끝났을 때의 「끄기」는 가장 중요한 버튼이라 글자 그대로 둬요.</p></div>
+    </div>
+  </section>
+
+  <!-- D palette -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">D</span>색 (지난번 비교)</h2><p>고르신 L1과 D2에 「선택」을 붙였어요. 맥이 다크 모드면 D2, 라이트 모드면 L1이 자동으로 나오고, 설정에서 직접 고를 수도 있게 해요.</p></div>
+    <div class="opts" id="palettes"></div>
+  </section>
+
+  <!-- I icon -->
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">I</span>툴바 아이콘 확인</h2><p>아이콘 그림은 지금 것 그대로예요. 크롬 툴바가 밝을 때와 어두울 때 잘 보이는지만 봐 주세요. 아이콘 위 글자는 4글자 제한 때문에 지금처럼 남은 시간(24m)으로 둬요.</p></div>
+    <div class="duo">
+      <div class="tbar lt"><span class="url">docs.google.com/…</span><div class="ticon"><img src="../extension/icons/icon32.png" alt="타이머 아이콘"><span class="bdg">24m</span></div></div>
+      <div class="tbar dk"><span class="url">docs.google.com/…</span><div class="ticon"><img src="../extension/icons/icon32.png" alt="타이머 아이콘"><span class="bdg">24m</span></div></div>
+    </div>
+  </section>
+
+  <section class="pick">
+    <h2>확인해 주실 것</h2>
+    <ul>
+      <li>지금까지 고른 것: <code>L1 · D2 · R4a · T2(오전/오후 · 시 · 분)</code></li>
+      <li><b>휠 1칸이 정말 1분씩 움직이는지</b>, 드래그 느낌이 괜찮은지 알려 주세요. 오른쪽 「방금 휠 신호」 숫자도 같이 알려 주시면 실제 확장에서 맞추는 데 써요.</li>
+      <li><b>취소 아이콘:</b> <code>X1</code>(✕), <code>X3</code>(↶), <code>X4</code>(↺) 중 하나</li>
+      <li><b>다음 단계</b>는 이대로 실제 확장 코드에 옮기고, 헤드리스 크롬으로 확인한 뒤 설치해 보는 거예요.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+const pad=n=>String(n).padStart(2,'0');
+const IH=46,RC=2*Math.PI*80;
+const apOf=d=>d.getHours()<12?'오전':'오후';
+const h12=d=>d.getHours()%12||12;
+const hm=d=>`${h12(d)}:${pad(d.getMinutes())}`;
+const clockKo=(d,sec)=>`${apOf(d)} ${hm(d)}`+(sec?':'+pad(d.getSeconds()):'');
+function durKo(sec){const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),p=[];if(h)p.push(h+'시간');if(m)p.push(m+'분');return p.join(' ')||'0분';}
+function fmtDur(sec){const s=Math.max(0,Math.ceil(sec)),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return h?`${h}:${pad(m)}:${pad(x)}`:`${pad(m)}:${pad(x)}`;}
+const ceilMin=ms=>Math.ceil(ms/60000)*60000;
+const header=clock=>`<div class="ph"><div class="now">${clock?'<span class="l">지금</span><span class="c" data-clock></span>':''}</div><div class="seg"><span class="on">타이머</span><span>스톱워치</span></div></div>`;
+
+/* ---------- D: palettes (reference) ---------- */
+const PAL=[
+  ['L0','지금 밝은 색','',false,'지금 쓰는 민트예요.'],
+  ['L1','한 톤 낮춘 밝은 색','soft',true,'바탕을 조금 진하게, 흰 부분을 연한 민트로 바꿨어요.'],
+  ['D1','민트 다크','d1',false,'아주 어두운 초록 바탕이에요.'],
+  ['D2','차콜 다크','d2',true,'초록기 없는 짙은 회색이에요. 맥 다크 모드의 다른 창들과 잘 섞여요.'],
+];
+const st=(vals,cls='')=>`<div class="wcol static ${cls}">${vals.map(v=>`<div>${v}</div>`).join('')}</div>`;
+document.getElementById('palettes').innerHTML=PAL.map(([k,n,mt,sel,desc])=>`
+  <div class="opt"><h3><span class="tag">${k}</span>${n}${sel?' <span class="sel">선택</span>':''}</h3>
+    <div class="m pop" data-mt="${mt}">${header(false)}
+      <div class="wheels"><div class="band"></div>
+        <div class="wcolw">${st(['','오전','오후','',''],'ap')}<small>&nbsp;</small></div>
+        <div class="wcolw">${st(['12','1','2','3','4'])}<small>시</small></div><span class="wsep">:</span>
+        <div class="wcolw">${st(['28','29','30','31','32'])}<small>분</small></div></div>
+      <div class="chips"><span class="chip">+1분</span><span class="chip">+5분</span><span class="chip">+10분</span><span class="chip">+25분</span><span class="chip">+1시간</span></div>
+      <div class="at"><b>약 23분 후</b> 알림</div>
+      <button class="go">시작</button></div>
+    <p>${desc}</p></div>`).join('');
+
+/* ---------- mock theme switch ---------- */
+const MTS=[['soft','L1 밝게'],['d2','D2 다크']];
+let mt='d2';
+function applyMt(){
+  document.querySelectorAll('[data-mtl]').forEach(e=>e.dataset.mt=mt);
+  document.querySelectorAll('[data-mtbar] button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===mt));
+}
+document.querySelectorAll('[data-mtbar]').forEach(bar=>{
+  MTS.forEach(([v,l])=>{const b=document.createElement('button');b.type='button';b.dataset.v=v;b.textContent=l;b.onclick=()=>{mt=v;applyMt();};bar.appendChild(b);});
+});
+
+/* ---------- demo timer shared by T and R ---------- */
+const demo={start:Date.now(),target:ceilMin(Date.now()+25*60*1000)};
+
+/* ---------- 직접 움직이는 다이얼 한 칸 ----------
+   휠: 큰 신호(마우스 한 칸)는 1줄, 작은 신호(트랙패드)는 모아서 STEP_PX마다 1줄.
+   드래그: 손가락을 따라 움직이고, 놓을 때 속도를 보고 조금 더 굴린 뒤 가까운 줄에 멈춘다.
+   클릭: 누른 줄로 이동. 키보드: ↑↓ 1줄.
+   set()은 조용히 움직이고(onChange 없음), 사람이 움직인 경우에만 onChange(prev, cur)를 부른다. */
+const STEP_PX=30,NOTCH_PX=40,FAST_MS=70;
+function makeWheel(el,items,onChange){
+  el.classList.add('drag');
+  el.innerHTML=items.map(v=>`<div>${v}</div>`).join('');
+  const n=items.length,clamp=i=>Math.max(0,Math.min(n-1,i));
+  let idx=0,acc=0,streak=0,lastT=0,lastDir=0,glideT=0;
+  const go=(i,smooth)=>el.scrollTo({top:i*IH,behavior:smooth?'smooth':'auto'});
+  function move(i){i=clamp(i);if(i===idx){go(idx,true);return;}const prev=idx;idx=i;go(idx,true);onChange(prev,idx);}
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const dy=e.deltaMode===1?e.deltaY*NOTCH_PX:e.deltaY;
+    log(dy);
+    if(Math.abs(dy)>=NOTCH_PX){
+      // 마우스 휠: 칸 사이 간격이 짧으면 빨리 돌리는 중 → 1·2·3줄로 가속, 멈추면 몇 줄 더 미끄러짐
+      const t=performance.now(),dir=Math.sign(dy);
+      streak=(t-lastT<FAST_MS&&dir===lastDir)?streak+1:0;lastT=t;lastDir=dir;acc=0;
+      move(idx+dir*(streak<2?1:streak<5?2:3));
+      clearTimeout(glideT);
+      if(streak>=3)glideT=setTimeout(()=>{move(idx+dir*Math.min(5,Math.floor(streak/2)));streak=0;},FAST_MS+20);
+      return;
+    }
+    acc+=dy;
+    if(Math.abs(acc)>=STEP_PX){const k=Math.trunc(acc/STEP_PX);acc-=k*STEP_PX;move(idx+k);}
+  },{passive:false});
+  let drag=null;
+  el.addEventListener('pointerdown',e=>{
+    el.setPointerCapture(e.pointerId);el.classList.add('grabbing');
+    drag={y0:e.clientY,top0:el.scrollTop,moved:0,ly:e.clientY,lt:performance.now(),v:0};
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const dy=e.clientY-drag.y0;drag.moved=Math.max(drag.moved,Math.abs(dy));
+    el.scrollTop=Math.max(0,Math.min((n-1)*IH,drag.top0-dy));
+    const t=performance.now();if(t>drag.lt){drag.v=(e.clientY-drag.ly)/(t-drag.lt);drag.ly=e.clientY;drag.lt=t;}
+  });
+  const end=e=>{
+    if(!drag)return;el.classList.remove('grabbing');
+    if(drag.moved<5){
+      // 클릭: 누른 줄로 이동. 가운데 줄을 누르면 오전/오후처럼 두 칸짜리는 반대쪽으로.
+      const r=el.getBoundingClientRect(),row=Math.floor((e.clientY-r.top+el.scrollTop-92)/IH);
+      move(row===idx&&n===2?1-idx:row);
+    }else{
+      const fling=performance.now()-drag.lt<80?drag.v*-180:0;  // px/ms → 조금 더 굴리기
+      move(Math.round((el.scrollTop+fling)/IH));
+    }
+    drag=null;
+  };
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+  el.addEventListener('keydown',e=>{
+    if(e.key==='ArrowUp'){e.preventDefault();move(idx-1);}
+    if(e.key==='ArrowDown'){e.preventDefault();move(idx+1);}
+  });
+  return {get:()=>idx,set:(i,smooth)=>{idx=clamp(i);go(idx,smooth);}};
+}
+const logEl=document.querySelector('[data-log]');
+function log(dy){logEl.textContent=`방금 휠 신호: ${Math.round(dy*10)/10}px → ${Math.abs(dy)>=NOTCH_PX?'마우스 한 칸으로 보고 1줄':'트랙패드로 보고 모아서 움직임'}`;}
+
+/* ---------- T2: AM/PM · hour · minute dial ---------- */
+const su=document.getElementById('setup');
+su.innerHTML=`${header(false)}
+  <div class="wheels"><div class="band"></div>
+    <div class="wcolw"><div class="wcol ap" data-c="ap" tabindex="0" aria-label="오전 오후"></div><small>&nbsp;</small></div>
+    <div class="wcolw"><div class="wcol" data-c="h" tabindex="0" aria-label="시"></div><small>시</small></div><span class="wsep">:</span>
+    <div class="wcolw"><div class="wcol" data-c="m" tabindex="0" aria-label="분"></div><small>분</small></div></div>
+  <div class="chips">${[[60,'+1분'],[300,'+5분'],[600,'+10분'],[1500,'+25분'],[3600,'+1시간']].map(([s,l])=>`<button class="chip" data-p="${s}">${l}</button>`).join('')}</div>
+  <div class="at" data-endline></div>
+  <button class="go" data-go>시작</button>`;
+const q=s=>su.querySelector(s);
+let touched=false;
+const wAp=makeWheel(q('[data-c="ap"]'),['오전','오후'],()=>{touched=true;});
+// 시 칸 순서는 1~12. 12에 들어가거나 12에서 나오면 오전/오후를 넘긴다(11→12 정오·자정 넘김)
+const wH=makeWheel(q('[data-c="h"]'),Array.from({length:12},(_,i)=>i+1),(p,c)=>{touched=true;if((p===11)!==(c===11))wAp.set(1-wAp.get(),true);});
+const wM=makeWheel(q('[data-c="m"]'),Array.from({length:60},(_,i)=>pad(i)),()=>{touched=true;});
+function setWheels(d,smooth){wAp.set(d.getHours()<12?0:1,smooth);wH.set(h12(d)-1,smooth);wM.set(d.getMinutes(),smooth);}
+q('.chips').addEventListener('click',e=>{
+  const b=e.target.closest('[data-p]');if(!b)return;
+  touched=true;setWheels(new Date(ceilMin(Date.now()+ +b.dataset.p*1000)),true);
+});
+function wheelTarget(){
+  const now=new Date(),d=new Date(now);
+  d.setHours((wH.get()+1)%12+wAp.get()*12,wM.get(),0,0);
+  let tomorrow=false;if(d<=now){d.setDate(d.getDate()+1);tomorrow=true;}
+  return {d,tomorrow};
+}
+function renderSetup(){
+  if(!touched){
+    q('[data-endline]').textContent='다이얼을 돌려 끝나는 시각을 정해 주세요';
+    q('[data-go]').disabled=true;return;
+  }
+  const {d,tomorrow}=wheelTarget(),sec=(d-Date.now())/1000;
+  const when=sec<60?'1분 안에':`약 ${durKo(Math.floor(sec/60)*60)} 후`;
+  q('[data-endline]').innerHTML=(tomorrow?'<span class="tmr">내일</span>':'')+`<b>${when}</b> 알림`;
+  q('[data-go]').disabled=false;
+}
+q('[data-go]').onclick=()=>{
+  if(!touched)return;
+  demo.start=Date.now();demo.target=wheelTarget().d.getTime();
+  touched=false;setWheels(new Date(),true);
+  document.querySelector('[data-run]').scrollIntoView({behavior:'smooth',block:'center'});
+};
+requestAnimationFrame(()=>setWheels(new Date(),false));
+
+/* ---------- R4a with cancel icon ---------- */
+const runs=[...document.querySelectorAll('[data-run]')];
+runs.forEach(run=>{
+  run.innerHTML=`${header(true)}
+    <div class="ring"><svg viewBox="0 0 190 190"><circle class="tr" cx="95" cy="95" r="80"/><circle class="pg" cx="95" cy="95" r="80" stroke-dasharray="${RC}"/></svg>
+      <div class="mid"><div class="cap" data-cap></div><div class="big" data-big style="font-size:46px"></div><div class="sub" data-sub></div></div></div>
+    <div class="row"><button class="b" data-add="60">+1분</button><button class="b" data-add="300">+5분</button><span class="gap"></span>
+      <button class="ib" data-x title="타이머 취소" aria-label="타이머 취소"><svg><use href="#${run.dataset.run}"/></svg></button></div>`;
+  run.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const now=Date.now();if(demo.target<now){demo.start=now;demo.target=now;}demo.target+= +b.dataset.add*1000;});
+  run.querySelector('[data-x]').onclick=()=>{demo.start=Date.now();demo.target=ceilMin(Date.now()+25*60*1000);};
+});
+function renderRun(){
+  const now=Date.now(),rem=Math.max(0,demo.target-now),total=Math.max(1,demo.target-demo.start),end=new Date(demo.target),done=rem===0;
+  runs.forEach(run=>{
+    run.classList.toggle('done',done);
+    run.querySelector('.pg').setAttribute('stroke-dashoffset',RC*(1-rem/total));
+    run.querySelector('[data-cap]').textContent=apOf(end);
+    run.querySelector('[data-big]').textContent=hm(end);
+    run.querySelector('[data-sub]').innerHTML=done?'시간이 됐어요':`남은 <b>${fmtDur(rem/1000)}</b>`;
+  });
+  document.querySelectorAll('[data-endko]').forEach(e=>e.textContent=`${apOf(end)} ${hm(end)}`);
+}
+
+function loop(){
+  document.querySelectorAll('[data-clock]').forEach(e=>e.textContent=clockKo(new Date(),true));
+  renderSetup();renderRun();
+}
+applyMt();loop();setInterval(loop,250);
+})();
+</script>

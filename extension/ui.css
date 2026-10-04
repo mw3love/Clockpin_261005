@@ -1,10 +1,21 @@
-/* A3 말랑 민트 — 팝업·알림 창·설정이 같이 쓴다 */
+/* 팝업·알림 창·설정이 같이 쓴다. 밝게 = L1(한 톤 낮춘 민트), 어둡게 = D2(차콜)
+   맥 설정을 따르고, 설정 화면에서 고르면 <html data-theme="light|dark">로 덮어쓴다 */
 @font-face { font-family: "Jua"; src: url("fonts/jua-subset.woff2") format("woff2"); font-display: block; }
 :root {
-  --bg: #EAF6F1; --ink: #1E3A33; --muted: #5E7B73; --line: #D2E9E0; --white: #FFFFFF;
-  --coral: #FF6F5B; --done: #E2463A;
+  --bg: #DDEBE5; --ink: #1E3A33; --muted: #56706A; --line: #C9DDD5; --surf: #EEF5F2;
+  --coral: #EE6553; --done: #D63F33; --sh: rgba(30, 58, 51, .08); --stripe: rgba(255, 255, 255, .45);
   --round: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1B1C1E; --ink: #E6E8E7; --muted: #9CA19F; --line: #2C2E31; --surf: #26282B;
+    --coral: #FF7C69; --done: #FF6B5E; --sh: rgba(0, 0, 0, .4); --stripe: rgba(255, 255, 255, .04); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1B1C1E; --ink: #E6E8E7; --muted: #9CA19F; --line: #2C2E31; --surf: #26282B;
+  --coral: #FF7C69; --done: #FF6B5E; --sh: rgba(0, 0, 0, .4); --stripe: rgba(255, 255, 255, .04); color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -14,7 +25,7 @@ button:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
 [hidden] { display: none !important; }
 
 .row { display: flex; gap: 8px; }
-.b { all: unset; cursor: pointer; flex: 1; text-align: center; padding: 10px 0; border-radius: 14px; background: var(--white); font-size: 13.5px; color: var(--ink); }
+.b { all: unset; cursor: pointer; flex: 1; text-align: center; padding: 10px 0; border-radius: 14px; background: var(--surf); font-size: 13.5px; color: var(--ink); }
 .b:hover { box-shadow: 0 0 0 2px var(--line) inset; }
 .b.pri { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255, 111, 91, .35); }
 .go { all: unset; cursor: pointer; text-align: center; background: var(--coral); color: #fff; font-weight: 600; border-radius: 14px; padding: 13px 0; font-size: 16px; box-shadow: 0 6px 14px rgba(255, 111, 91, .35); }

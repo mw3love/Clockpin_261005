@@ -35,10 +35,24 @@ function badgeText(ms) {
   return h + 'h' + (r || '');
 }
 
-const DEFAULTS = { presets: [5, 10, 25, 60], alertWindow: true, sound: true, lastSecs: 600 };
+const DEFAULTS = { presets: [5, 10, 25, 60], alertWindow: true, sound: true };
 const EMPTY_SW = { acc: 0, start: 0, on: false, laps: [] };
 
 async function getSettings() {
   const { settings } = await chrome.storage.local.get('settings');
   return { ...DEFAULTS, ...settings };
+}
+
+// 화면 색: 'auto'(맥 설정 따라) | 'light' | 'dark'.
+// 페이지가 열리자마자 칠해야 깜빡이지 않으므로, 바로 읽히는 localStorage에 둔다(백그라운드는 화면이 없어 건너뜀)
+function readTheme() {
+  try { return localStorage.getItem('theme') || 'auto'; } catch { return 'auto'; }
+}
+function applyTheme(t = readTheme()) {
+  if (t === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+}
+if (typeof document !== 'undefined') {
+  applyTheme();
+  addEventListener('storage', e => { if (e.key === 'theme') applyTheme(); });
 }

@@ -21,6 +21,16 @@ async function save() {
   $('sound').addEventListener('change', save);
 })();
 
+// 화면 색은 팝업이 열리자마자 칠할 수 있게 localStorage에 둔다(common.js의 readTheme)
+document.querySelectorAll('[name="theme"]').forEach(r => {
+  r.checked = r.value === readTheme();
+  r.addEventListener('change', () => {
+    try { localStorage.setItem('theme', r.value); } catch {}
+    applyTheme(r.value);
+    $('saved').textContent = '저장했어요';
+  });
+});
+
 let testAudio = null;
 $('test').onclick = () => {
   if (testAudio) { testAudio.pause(); testAudio = null; $('test').textContent = '알림음 들어 보기'; return; }
