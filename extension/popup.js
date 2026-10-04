@@ -92,11 +92,12 @@ function setWheels(d, smooth) {
   wH.set((d.getHours() % 12 || 12) - 1, smooth);
   wM.set(d.getMinutes(), smooth);
 }
-// 칩: 다이얼에 보이는 시각에 N분을 더한다(누를수록 쌓임). 실제 남은 시간은 최대 59초 짧을 수 있다
+// 칩: 언제나 지금 시각(분) + N분. 누적하지 않는다. 실제로 울리는 시간은 최대 59초 짧을 수 있다
+const nowMinute = () => Math.floor(Date.now() / 60000) * 60000;
 document.querySelector('.chips').addEventListener('click', e => {
   const b = e.target.closest('[data-p]');
   if (!b) return;
-  setWheels(new Date(wheelTarget().d.getTime() + b.dataset.p * 1000), true);
+  setWheels(new Date(nowMinute() + b.dataset.p * 1000), true);
   touch();
 });
 
@@ -120,9 +121,9 @@ function renderEndline() {
     $('go').disabled = true;
     return;
   }
-  const { d, tomorrow } = wheelTarget(), sec = (d - Date.now()) / 1000;
-  const when = sec < 60 ? '1분 안에' : `약 ${durKo(Math.floor(sec / 60) * 60)} 후`;
-  $('endline').innerHTML = (tomorrow ? '<span class="tmr">내일</span>' : '') + `<b>${when}</b> 알림`;
+  // 시계 숫자끼리의 분 차이(2:05 → 2:15면 10분). 초까지 정확한 남은 시간은 시작 후 링에 나온다
+  const { d, tomorrow } = wheelTarget(), mins = Math.round((d - nowMinute()) / 60000);
+  $('endline').innerHTML = (tomorrow ? '<span class="tmr">내일</span>' : '') + `<b>${durKo(mins * 60)} 후</b> 알림`;
   $('go').disabled = false;
 }
 
