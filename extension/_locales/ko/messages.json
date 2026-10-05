@@ -1,0 +1,170 @@
+{
+  "extName": {
+    "message": "Clockpin"
+  },
+  "extDesc": {
+    "message": "툴바에서 다이얼로 끝나는 시각을 골라 그때 딱 알려 주는 알람. 빠른 타이머와 스톱워치도 함께."
+  },
+  "lang": {
+    "message": "ko"
+  },
+  "am": {
+    "message": "오전"
+  },
+  "pm": {
+    "message": "오후"
+  },
+  "now": {
+    "message": "지금"
+  },
+  "tabAlarm": {
+    "message": "알람"
+  },
+  "tabStopwatch": {
+    "message": "스톱워치"
+  },
+  "settings": {
+    "message": "설정"
+  },
+  "resetNow": {
+    "message": "지금 시각으로"
+  },
+  "ampmLabel": {
+    "message": "오전 오후"
+  },
+  "hourLabel": {
+    "message": "시"
+  },
+  "minuteLabel": {
+    "message": "분"
+  },
+  "chipMin": {
+    "message": "+$1분"
+  },
+  "chipHour": {
+    "message": "+$1시간"
+  },
+  "start": {
+    "message": "시작"
+  },
+  "tomorrow": {
+    "message": "내일"
+  },
+  "endIn": {
+    "message": "<b>$1 후</b> 알림"
+  },
+  "durH": {
+    "message": "$1시간"
+  },
+  "durM": {
+    "message": "$1분"
+  },
+  "durS": {
+    "message": "$1초"
+  },
+  "cancel": {
+    "message": "취소"
+  },
+  "moreMin": {
+    "message": "$1분 더"
+  },
+  "dismiss": {
+    "message": "끄기"
+  },
+  "left": {
+    "message": "남은 <b>$1</b>"
+  },
+  "timesUp": {
+    "message": "시간이 됐어요"
+  },
+  "timesUpBang": {
+    "message": "시간 됐어요!"
+  },
+  "swStop": {
+    "message": "정지"
+  },
+  "swResume": {
+    "message": "계속"
+  },
+  "lap": {
+    "message": "랩"
+  },
+  "lapN": {
+    "message": "랩 $1"
+  },
+  "reset": {
+    "message": "초기화"
+  },
+  "appearance": {
+    "message": "화면 색"
+  },
+  "themeAuto": {
+    "message": "자동"
+  },
+  "themeLight": {
+    "message": "밝게"
+  },
+  "themeDark": {
+    "message": "어둡게"
+  },
+  "themeHint": {
+    "message": "「자동」은 컴퓨터의 라이트·다크 모드를 따라가요."
+  },
+  "menuTimes": {
+    "message": "우클릭 메뉴 시간(분)"
+  },
+  "presetN": {
+    "message": "$1번"
+  },
+  "whenUp": {
+    "message": "시간이 됐을 때"
+  },
+  "optWindow": {
+    "message": "작은 알림 창도 띄우기"
+  },
+  "optSound": {
+    "message": "알림음 울리기"
+  },
+  "preview": {
+    "message": "알림음 들어 보기"
+  },
+  "stopPreview": {
+    "message": "멈추기"
+  },
+  "since": {
+    "message": "$1 지남"
+  },
+  "notifMsg": {
+    "message": "$1에 맞춘 알림이에요"
+  },
+  "menuTimer": {
+    "message": "$1 타이머"
+  },
+  "menuSwStart": {
+    "message": "스톱워치 시작"
+  },
+  "menuSwPause": {
+    "message": "스톱워치 멈추기"
+  },
+  "menuSwResume": {
+    "message": "스톱워치 계속"
+  },
+  "menuStop": {
+    "message": "지금 타이머 끄기"
+  },
+  "menuStopLeft": {
+    "message": "지금 타이머 끄기 ($1 남음)"
+  },
+  "menuDismiss": {
+    "message": "알림 끄기"
+  },
+  "badgeDone": {
+    "message": "끝"
+  },
+  "soundWhy": {
+    "message": "알림음 재생"
+  },
+  "addMin": {
+    "message": "+$1분"
+  }
+}

@@ -6,6 +6,16 @@ const send = m => chrome.runtime.sendMessage(m);
 
 let timer = null, sw = { ...EMPTY_SW }, tab = 'timer', settingsOpen = false;
 
+localize();
+document.querySelectorAll('[data-p]').forEach(b => {
+  const m = b.dataset.p / 60;
+  b.textContent = m % 60 ? t('chipMin', m) : t('chipHour', m / 60);
+});
+presetLabels();
+function presetLabels() {
+  ['p0', 'p1', 'p2', 'p3'].forEach((id, i) => $(id).setAttribute('aria-label', t('presetN', i + 1)));
+}
+
 /* ---------- 다이얼: 끝나는 시각(오전/오후 · 시 · 분) ----------
    휠: 큰 신호(마우스 한 칸)는 1줄. 칸 사이가 짧으면(빨리 돌림) 1·2·3줄로 가속하고, 멈추면 몇 줄 더 미끄러진다.
        작은 신호(트랙패드)는 모아서 STEP_PX마다 1줄.
@@ -79,7 +89,7 @@ function makeWheel(el, items, onChange) {
 }
 
 const touch = () => { touched = true; renderEndline(); };
-const wAp = makeWheel($('wap'), ['오전', '오후'], touch);
+const wAp = makeWheel($('wap'), [t('am'), t('pm')], touch);
 // 시 칸 순서는 1~12. 12에 들어가거나 12에서 나오면 오전/오후를 넘긴다(정오·자정 넘김)
 const wH = makeWheel($('wh'), Array.from({ length: 12 }, (_, i) => i + 1), (p, c) => {
   if ((p === 11) !== (c === 11)) wAp.set(1 - wAp.get(), true);
@@ -123,7 +133,7 @@ function renderEndline() {
   }
   // 시계 숫자끼리의 분 차이(2:05 → 2:15면 10분). 초까지 정확한 남은 시간은 시작 후 링에 나온다
   const { d, tomorrow } = wheelTarget(), mins = Math.round((d - nowMinute()) / 60000);
-  $('endline').innerHTML = (tomorrow ? '<span class="tmr">내일</span>' : '') + `<b>${durKo(mins * 60)} 후</b> 알림`;
+  $('endline').innerHTML = (tomorrow ? `<span class="tmr">${t('tomorrow')}</span>` : '') + t('endIn', durText(mins * 60));
   $('go').disabled = false;
 }
 
@@ -165,12 +175,12 @@ function renderButtons() {
   if (!timer) return;
   const done = timer.status === 'done';
   if (done) {
-    setBtn('ba', '1분 더', { cmd: 'snooze', secs: 60 });
-    setBtn('bb', '5분 더', { cmd: 'snooze', secs: 300 });
-    setBtn('bc', '끄기', { cmd: 'dismiss' }, true);
+    setBtn('ba', t('moreMin', 1), { cmd: 'snooze', secs: 60 });
+    setBtn('bb', t('moreMin', 5), { cmd: 'snooze', secs: 300 });
+    setBtn('bc', t('dismiss'), { cmd: 'dismiss' }, true);
   } else {
-    setBtn('ba', '+1분', { cmd: 'add', secs: 60 });
-    setBtn('bb', '+5분', { cmd: 'add', secs: 300 });
+    setBtn('ba', t('addMin', 1), { cmd: 'add', secs: 60 });
+    setBtn('bb', t('addMin', 5), { cmd: 'add', secs: 300 });
   }
   // 진행 중 취소는 작은 아이콘(↶), 끝났을 때 끄기는 글자 버튼
   $('bc').hidden = !done;
@@ -183,10 +193,10 @@ function renderRun() {
   if (!timer) return;
   const rem = timer.status === 'running' ? Math.max(0, timer.endAt - Date.now()) : 0;
   const end = new Date(timer.endAt);
-  $('ampm').textContent = end.getHours() < 12 ? '오전' : '오후';
+  $('ampm').textContent = apText(end);
   $('left').textContent = `${end.getHours() % 12 || 12}:${pad(end.getMinutes())}`;
   $('pg').setAttribute('stroke-dashoffset', RC * (1 - rem / (timer.total * 1000)));
-  $('sub').innerHTML = timer.status === 'done' ? '시간이 됐어요' : `남은 <b>${fmtDur(rem / 1000)}</b>`;
+  $('sub').innerHTML = timer.status === 'done' ? t('timesUp') : t('left', fmtDur(rem / 1000));
 }
 
 /* ---------- 스톱워치(S1) ---------- */
@@ -200,8 +210,8 @@ function renderSw() {
   $('swt').innerHTML = fmtDur(Math.floor(ms / 1000)) + '<small>.' + Math.floor(ms % 1000 / 100) + '</small>';
 }
 function renderSwStatic() {
-  $('swgo').textContent = sw.on ? '정지' : sw.acc ? '계속' : '시작';
-  $('laps').innerHTML = sw.laps.map((t, i) => `<li><span>랩 ${i + 1}</span><span>${fmtMs(t)}</span></li>`).reverse().join('');
+  $('swgo').textContent = t(sw.on ? 'swStop' : sw.acc ? 'swResume' : 'start');
+  $('laps').innerHTML = sw.laps.map((ms, i) => `<li><span>${t('lapN', i + 1)}</span><span>${fmtMs(ms)}</span></li>`).reverse().join('');
 }
 
 /* ---------- 설정(팝업 안) ----------
@@ -233,11 +243,11 @@ document.querySelectorAll('[name="theme"]').forEach(r => {
 });
 let testAudio = null;
 $('test').onclick = () => {
-  if (testAudio) { testAudio.pause(); testAudio = null; $('test').textContent = '알림음 들어 보기'; return; }
+  if (testAudio) { testAudio.pause(); testAudio = null; $('test').textContent = t('preview'); return; }
   testAudio = new Audio('chime.wav');
   testAudio.play();
-  testAudio.onended = () => { testAudio = null; $('test').textContent = '알림음 들어 보기'; };
-  $('test').textContent = '멈추기';
+  testAudio.onended = () => { testAudio = null; $('test').textContent = t('preview'); };
+  $('test').textContent = t('stopPreview');
 };
 
 /* ---------- 상태 읽기 ---------- */

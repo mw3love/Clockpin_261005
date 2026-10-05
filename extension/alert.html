@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>시간 됐어요</title>
+<title>Clockpin</title>
 <link rel="stylesheet" href="ui.css">
 <script src="common.js"></script>
 <style>
@@ -11,6 +11,8 @@
   .bell { width: 64px; height: 64px; border-radius: 50%; background: var(--coral); display: grid; place-items: center; box-shadow: 0 8px 18px rgba(255, 111, 91, .4); animation: shake .5s ease-in-out 6; }
   .bell svg { width: 32px; height: 32px; }
   h1 { margin: 6px 0 0; font-family: var(--round); font-weight: 400; font-size: 32px; }
+  /* 제목 글꼴(Jua) 파일에는 영어 알파벳이 없어서, 영어일 때는 기본 글꼴로 */
+  html[lang="en"] h1 { font-family: var(--body); font-weight: 700; font-size: 28px; }
   .since { font-size: 12px; color: var(--muted); }
   .row { width: 100%; margin-top: 10px; }
   @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
@@ -18,13 +20,13 @@
 </head>
 <body>
   <div class="bell"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
-  <h1>시간 됐어요!</h1>
+  <h1 data-i18n="timesUpBang"></h1>
   <div class="at" id="info"></div>
   <div class="since" id="since"></div>
   <div class="row">
-    <button class="b" data-snooze="60">1분 더</button>
-    <button class="b" data-snooze="300">5분 더</button>
-    <button class="b pri" id="off">끄기</button>
+    <button class="b" data-snooze="60"></button>
+    <button class="b" data-snooze="300"></button>
+    <button class="b pri" id="off" data-i18n="dismiss"></button>
   </div>
   <script src="alert.js"></script>
 </body>

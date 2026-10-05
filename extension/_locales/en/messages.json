@@ -1,0 +1,170 @@
+{
+  "extName": {
+    "message": "Clockpin"
+  },
+  "extDesc": {
+    "message": "Pick the exact time on a dial and get alerted right then — from your toolbar. Quick timers and a stopwatch too."
+  },
+  "lang": {
+    "message": "en"
+  },
+  "am": {
+    "message": "AM"
+  },
+  "pm": {
+    "message": "PM"
+  },
+  "now": {
+    "message": "Now"
+  },
+  "tabAlarm": {
+    "message": "Alarm"
+  },
+  "tabStopwatch": {
+    "message": "Stopwatch"
+  },
+  "settings": {
+    "message": "Settings"
+  },
+  "resetNow": {
+    "message": "Back to now"
+  },
+  "ampmLabel": {
+    "message": "AM or PM"
+  },
+  "hourLabel": {
+    "message": "Hour"
+  },
+  "minuteLabel": {
+    "message": "Minute"
+  },
+  "chipMin": {
+    "message": "+$1m"
+  },
+  "chipHour": {
+    "message": "+$1h"
+  },
+  "start": {
+    "message": "Start"
+  },
+  "tomorrow": {
+    "message": "Tomorrow"
+  },
+  "endIn": {
+    "message": "Alarm in <b>$1</b>"
+  },
+  "durH": {
+    "message": "$1 hr"
+  },
+  "durM": {
+    "message": "$1 min"
+  },
+  "durS": {
+    "message": "$1 sec"
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
+  "moreMin": {
+    "message": "$1 more min"
+  },
+  "dismiss": {
+    "message": "Dismiss"
+  },
+  "left": {
+    "message": "<b>$1</b> left"
+  },
+  "timesUp": {
+    "message": "Time's up"
+  },
+  "timesUpBang": {
+    "message": "Time's up!"
+  },
+  "swStop": {
+    "message": "Stop"
+  },
+  "swResume": {
+    "message": "Resume"
+  },
+  "lap": {
+    "message": "Lap"
+  },
+  "lapN": {
+    "message": "Lap $1"
+  },
+  "reset": {
+    "message": "Reset"
+  },
+  "appearance": {
+    "message": "Appearance"
+  },
+  "themeAuto": {
+    "message": "Auto"
+  },
+  "themeLight": {
+    "message": "Light"
+  },
+  "themeDark": {
+    "message": "Dark"
+  },
+  "themeHint": {
+    "message": "Auto follows your computer's light or dark mode."
+  },
+  "menuTimes": {
+    "message": "Right-click menu times (min)"
+  },
+  "presetN": {
+    "message": "Preset $1"
+  },
+  "whenUp": {
+    "message": "When time's up"
+  },
+  "optWindow": {
+    "message": "Show a small alert window"
+  },
+  "optSound": {
+    "message": "Play a sound"
+  },
+  "preview": {
+    "message": "Preview sound"
+  },
+  "stopPreview": {
+    "message": "Stop"
+  },
+  "since": {
+    "message": "$1 ago"
+  },
+  "notifMsg": {
+    "message": "Alarm set for $1"
+  },
+  "menuTimer": {
+    "message": "$1 timer"
+  },
+  "menuSwStart": {
+    "message": "Start stopwatch"
+  },
+  "menuSwPause": {
+    "message": "Pause stopwatch"
+  },
+  "menuSwResume": {
+    "message": "Resume stopwatch"
+  },
+  "menuStop": {
+    "message": "Stop timer"
+  },
+  "menuStopLeft": {
+    "message": "Stop timer ($1 left)"
+  },
+  "menuDismiss": {
+    "message": "Dismiss alert"
+  },
+  "badgeDone": {
+    "message": "Done"
+  },
+  "soundWhy": {
+    "message": "Play the alarm sound"
+  },
+  "addMin": {
+    "message": "+$1 min"
+  }
+}

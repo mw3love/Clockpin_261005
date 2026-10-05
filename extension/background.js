@@ -57,7 +57,7 @@ async function updateBadge() {
   let text = '', color = COLORS.running;
   if (timer) {
     if (timer.status === 'running') text = badgeText(timer.endAt - now);
-    else { text = '끝'; color = COLORS.done; }
+    else { text = t('badgeDone'); color = COLORS.done; }
   } else if (sw.on) {
     text = Math.floor((sw.acc + now - sw.start) / 60000) + 'm';
     color = COLORS.sw;
@@ -81,12 +81,12 @@ async function finish() {
     chrome.notifications.create('timer-done', {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
-      title: '시간 됐어요',
-      message: `${fmtClock(new Date(timer.endAt))} 타이머가 끝났어요`,
+      title: t('timesUp'),
+      message: t('notifMsg', fmtClock(new Date(timer.endAt))),
       requireInteraction: true,
       priority: 2,
       silent: s.sound,
-      buttons: [{ title: '5분 더' }, { title: '끄기' }]
+      buttons: [{ title: t('moreMin', 5) }, { title: t('dismiss') }]
     });
     if (s.alertWindow) await openAlert();
     if (s.sound) await playSound();
@@ -113,7 +113,7 @@ async function closeAlert() {
 async function playSound() {
   const ctx = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
   if (!ctx.length) {
-    await chrome.offscreen.createDocument({ url: 'offscreen.html', reasons: ['AUDIO_PLAYBACK'], justification: '타이머 알림음 재생' })
+    await chrome.offscreen.createDocument({ url: 'offscreen.html', reasons: ['AUDIO_PLAYBACK'], justification: t('soundWhy') })
       .catch(() => {});
   }
   await chrome.runtime.sendMessage({ target: 'offscreen', cmd: 'play' }).catch(() => {});
@@ -185,18 +185,18 @@ async function buildMenus() {
   const s = await getSettings();
   await new Promise(r => chrome.contextMenus.removeAll(r));
   const add = props => chrome.contextMenus.create({ contexts: ['action'], ...props }, () => void chrome.runtime.lastError);
-  s.presets.forEach((min, i) => add({ id: 'p' + i, title: durKo(min * 60) + ' 타이머' }));
-  add({ id: 'sw', title: '스톱워치 시작' });
-  add({ id: 'cancel', title: '지금 타이머 끄기', enabled: false });
+  s.presets.forEach((min, i) => add({ id: 'p' + i, title: t('menuTimer', durText(min * 60)) }));
+  add({ id: 'sw', title: t('menuSwStart') });
+  add({ id: 'cancel', title: t('menuStop'), enabled: false });
   await updateMenu();
 }
 
 async function updateMenu() {
   const { timer, sw } = await load();
-  await menuUpdate('sw', { title: sw.on ? '스톱워치 멈추기' : sw.acc ? '스톱워치 계속' : '스톱워치 시작' });
-  let title = '지금 타이머 끄기';
-  if (timer?.status === 'running') title += ` (${badgeText(timer.endAt - Date.now())} 남음)`;
-  else if (timer?.status === 'done') title = '알림 끄기';
+  await menuUpdate('sw', { title: t(sw.on ? 'menuSwPause' : sw.acc ? 'menuSwResume' : 'menuSwStart') });
+  let title = t('menuStop');
+  if (timer?.status === 'running') title = t('menuStopLeft', badgeText(timer.endAt - Date.now()));
+  else if (timer?.status === 'done') title = t('menuDismiss');
   await menuUpdate('cancel', { title, enabled: !!timer });
 }
 

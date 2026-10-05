@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<title>빠른 타이머</title>
+<title>Clockpin</title>
 <link rel="stylesheet" href="ui.css">
 <script src="common.js"></script>
 <style>
@@ -63,6 +63,9 @@
   .rz:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; }
   .rz svg { width: 19px; height: 19px; }
   .rz.off { opacity: 0; pointer-events: none; }
+  /* 영어: 2 : 30 PM 순서, 되돌리기 아이콘은 왼쪽 빈자리로 */
+  html[lang="en"] .wcolw.apw { order: 9; }
+  html[lang="en"] .rz { right: auto; left: 8px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
   .chip { all: unset; cursor: pointer; font-size: 12.5px; padding: 5px 11px; border-radius: 99px; background: var(--surf); box-shadow: 0 2px 6px var(--sh); }
   .chip:hover { color: var(--coral); }
@@ -99,16 +102,16 @@
 </head>
 <body>
   <header class="ph" id="sethead" hidden>
-    <button class="back" id="back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>설정</button>
+    <button class="back" id="back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="settings"></span></button>
   </header>
   <header class="ph" id="head">
-    <div class="now"><span class="l">지금</span><span class="c" id="clock"></span></div>
+    <div class="now"><span class="l" data-i18n="now"></span><span class="c" id="clock"></span></div>
     <div class="right">
       <div class="seg" role="tablist">
-        <button role="tab" data-tab="timer" aria-selected="true">알람</button>
-        <button role="tab" data-tab="sw" aria-selected="false">스톱워치</button>
+        <button role="tab" data-tab="timer" aria-selected="true" data-i18n="tabAlarm"></button>
+        <button role="tab" data-tab="sw" aria-selected="false" data-i18n="tabStopwatch"></button>
       </div>
-      <button class="gear" id="opts" title="설정" aria-label="설정">
+      <button class="gear" id="opts" data-i18n-title="settings" data-i18n-aria="settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9.87 5.02 L10.48 2.42 L13.52 2.42 L14.13 5.02 L15.43 5.55 L17.70 4.15 L19.85 6.30 L18.45 8.57 L18.98 9.87 L21.58 10.48 L21.58 13.52 L18.98 14.13 L18.45 15.43 L19.85 17.70 L17.70 19.85 L15.43 18.45 L14.13 18.98 L13.52 21.58 L10.48 21.58 L9.87 18.98 L8.57 18.45 L6.30 19.85 L4.15 17.70 L5.55 15.43 L5.02 14.13 L2.42 13.52 L2.42 10.48 L5.02 9.87 L5.55 8.57 L4.15 6.30 L6.30 4.15 L8.57 5.55Z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
@@ -117,21 +120,21 @@
   <section class="pane" id="setup">
     <div class="wheels">
       <div class="band"></div>
-      <button class="rz off" id="rz" title="지금 시각으로" aria-label="지금 시각으로" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 13A8 8 0 1 0 6.4 6.3"/><path d="M4.5 3.5v4h4"/><path d="M12 8v4.3l2.8 1.7"/></svg></button>
-      <div class="wcolw"><div class="wcol ap" id="wap" tabindex="0" aria-label="오전 오후"></div></div>
-      <div class="wcolw"><div class="wcol" id="wh" tabindex="0" aria-label="시"></div></div>
+      <button class="rz off" id="rz" data-i18n-title="resetNow" data-i18n-aria="resetNow" tabindex="-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.2 13A8 8 0 1 0 6.4 6.3"/><path d="M4.5 3.5v4h4"/><path d="M12 8v4.3l2.8 1.7"/></svg></button>
+      <div class="wcolw apw"><div class="wcol ap" id="wap" tabindex="0" data-i18n-aria="ampmLabel"></div></div>
+      <div class="wcolw"><div class="wcol" id="wh" tabindex="0" data-i18n-aria="hourLabel"></div></div>
       <span class="wsep">:</span>
-      <div class="wcolw"><div class="wcol" id="wm" tabindex="0" aria-label="분"></div></div>
+      <div class="wcolw"><div class="wcol" id="wm" tabindex="0" data-i18n-aria="minuteLabel"></div></div>
     </div>
     <div class="chips">
-      <button class="chip" data-p="60">+1분</button>
-      <button class="chip" data-p="300">+5분</button>
-      <button class="chip" data-p="600">+10분</button>
-      <button class="chip" data-p="1500">+25분</button>
-      <button class="chip" data-p="3600">+1시간</button>
+      <button class="chip" data-p="60"></button>
+      <button class="chip" data-p="300"></button>
+      <button class="chip" data-p="600"></button>
+      <button class="chip" data-p="1500"></button>
+      <button class="chip" data-p="3600"></button>
     </div>
     <div class="at" id="endline"></div>
-    <button class="go" id="go">시작</button>
+    <button class="go" id="go" data-i18n="start"></button>
   </section>
 
   <section class="pane" id="run" hidden>
@@ -140,39 +143,39 @@
       <div class="mid"><div class="ampm" id="ampm"></div><div class="left" id="left">0:00</div><div class="sub" id="sub"></div></div>
     </div>
     <div class="row"><button class="b" id="ba"></button><button class="b" id="bb"></button><span class="gap" id="gap"></span><button class="b" id="bc"></button>
-      <button class="ib" id="bx" title="타이머 취소" aria-label="타이머 취소"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <button class="ib" id="bx" data-i18n-title="cancel" data-i18n-aria="cancel"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   </section>
 
   <section class="pane" id="sw" hidden>
     <div class="swt" id="swt">00:00<small>.0</small></div>
-    <div class="row"><button class="b pri" id="swgo">시작</button><button class="b" id="swlap">랩</button><button class="b" id="swreset">초기화</button></div>
+    <div class="row"><button class="b pri" id="swgo"></button><button class="b" id="swlap" data-i18n="lap"></button><button class="b" id="swreset" data-i18n="reset"></button></div>
     <ol class="laps" id="laps"></ol>
   </section>
 
   <section class="pane" id="set" hidden>
     <div class="card">
-      <h2>화면 색</h2>
-      <div class="tri" role="radiogroup" aria-label="화면 색">
-        <label><input type="radio" name="theme" value="auto">자동</label>
-        <label><input type="radio" name="theme" value="light">밝게</label>
-        <label><input type="radio" name="theme" value="dark">어둡게</label>
+      <h2 data-i18n="appearance"></h2>
+      <div class="tri" role="radiogroup" data-i18n-aria="appearance">
+        <label><input type="radio" name="theme" value="auto"><span data-i18n="themeAuto"></span></label>
+        <label><input type="radio" name="theme" value="light"><span data-i18n="themeLight"></span></label>
+        <label><input type="radio" name="theme" value="dark"><span data-i18n="themeDark"></span></label>
       </div>
-      <p>「자동」은 맥의 라이트·다크 모드를 따라가요.</p>
+      <p data-i18n="themeHint"></p>
     </div>
     <div class="card">
-      <h2>우클릭 메뉴 시간(분)</h2>
+      <h2 data-i18n="menuTimes"></h2>
       <div class="pre">
-        <input type="number" min="1" max="1439" id="p0" aria-label="1번">
-        <input type="number" min="1" max="1439" id="p1" aria-label="2번">
-        <input type="number" min="1" max="1439" id="p2" aria-label="3번">
-        <input type="number" min="1" max="1439" id="p3" aria-label="4번">
+        <input type="number" min="1" max="1439" id="p0">
+        <input type="number" min="1" max="1439" id="p1">
+        <input type="number" min="1" max="1439" id="p2">
+        <input type="number" min="1" max="1439" id="p3">
       </div>
     </div>
     <div class="card">
-      <h2>시간이 됐을 때</h2>
-      <label class="tg">작은 알림 창도 띄우기<input type="checkbox" id="alertWindow"></label>
-      <label class="tg">알림음 울리기<input type="checkbox" id="sound"></label>
-      <button class="mini" id="test">알림음 들어 보기</button>
+      <h2 data-i18n="whenUp"></h2>
+      <label class="tg"><span data-i18n="optWindow"></span><input type="checkbox" id="alertWindow"></label>
+      <label class="tg"><span data-i18n="optSound"></span><input type="checkbox" id="sound"></label>
+      <button class="mini" id="test" data-i18n="preview"></button>
     </div>
   </section>
 
