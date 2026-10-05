@@ -66,8 +66,9 @@
   /* 영어: 2 : 30 PM 순서, 되돌리기 아이콘은 왼쪽 빈자리로 */
   html[lang="en"] .wcolw.apw { order: 9; }
   html[lang="en"] .rz { right: auto; left: 8px; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-  .chip { all: unset; cursor: pointer; font-size: 12.5px; padding: 5px 11px; border-radius: 99px; background: var(--surf); box-shadow: 0 2px 6px var(--sh); }
+  /* 칩 5개를 늘 한 줄에 */
+  .chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .chip { all: unset; cursor: pointer; text-align: center; font-size: 12.5px; padding: 5px 0; border-radius: 99px; background: var(--surf); box-shadow: 0 2px 6px var(--sh); white-space: nowrap; }
   .chip:hover { color: var(--coral); }
   .tmr { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--coral); border-radius: 6px; padding: 0 6px; margin-right: 4px; vertical-align: 1px; }
 
@@ -89,15 +90,9 @@
   .ib:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
   .ib svg { width: 18px; height: 18px; }
   body.done .ring .sub { color: var(--done); font-weight: 600; }
-
-  /* 스톱워치(S1) */
-  .swt { font-family: var(--round); font-size: 52px; text-align: center; padding-top: 18px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .swt small { font-size: 28px; color: var(--muted); }
-  .laps { list-style: none; margin: 0; padding: 0; max-height: 132px; overflow: auto; font-size: 12.5px; }
-  .laps li { display: flex; justify-content: space-between; padding: 5px 8px; border-radius: 10px; }
-  .laps li:nth-child(odd) { background: var(--stripe); }
-  .laps li span:first-child { color: var(--muted); }
-  .laps li span:last-child { font-family: var(--round); font-size: 14px; }
+  /* 타이머 일시정지: 숫자를 흐리게 */
+  body.paused .ring .pg { stroke: var(--muted); }
+  body.paused .ring .left { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -108,8 +103,8 @@
     <div class="now"><span class="l" data-i18n="now"></span><span class="c" id="clock"></span></div>
     <div class="right">
       <div class="seg" role="tablist">
-        <button role="tab" data-tab="timer" aria-selected="true" data-i18n="tabAlarm"></button>
-        <button role="tab" data-tab="sw" aria-selected="false" data-i18n="tabStopwatch"></button>
+        <button role="tab" data-tab="at" aria-selected="true" data-i18n="tabAlarm"></button>
+        <button role="tab" data-tab="cd" aria-selected="false" data-i18n="tabTimer"></button>
       </div>
       <button class="gear" id="opts" data-i18n-title="settings" data-i18n-aria="settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9.87 5.02 L10.48 2.42 L13.52 2.42 L14.13 5.02 L15.43 5.55 L17.70 4.15 L19.85 6.30 L18.45 8.57 L18.98 9.87 L21.58 10.48 L21.58 13.52 L18.98 14.13 L18.45 15.43 L19.85 17.70 L17.70 19.85 L15.43 18.45 L14.13 18.98 L13.52 21.58 L10.48 21.58 L9.87 18.98 L8.57 18.45 L6.30 19.85 L4.15 17.70 L5.55 15.43 L5.02 14.13 L2.42 13.52 L2.42 10.48 L5.02 9.87 L5.55 8.57 L4.15 6.30 L6.30 4.15 L8.57 5.55Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -142,14 +137,26 @@
       <svg viewBox="0 0 190 190"><circle class="tr" cx="95" cy="95" r="80"/><circle class="pg" id="pg" cx="95" cy="95" r="80"/></svg>
       <div class="mid"><div class="ampm" id="ampm"></div><div class="left" id="left">0:00</div><div class="sub" id="sub"></div></div>
     </div>
-    <div class="row"><button class="b" id="ba"></button><button class="b" id="bb"></button><span class="gap" id="gap"></span><button class="b" id="bc"></button>
+    <div class="row"><button class="b" id="ba"></button><button class="b" id="bb"></button><button class="b" id="bc"></button><span class="gap" id="gap"></span>
       <button class="ib" id="bx" data-i18n-title="cancel" data-i18n-aria="cancel"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   </section>
 
-  <section class="pane" id="sw" hidden>
-    <div class="swt" id="swt">00:00<small>.0</small></div>
-    <div class="row"><button class="b pri" id="swgo"></button><button class="b" id="swlap" data-i18n="lap"></button><button class="b" id="swreset" data-i18n="reset"></button></div>
-    <ol class="laps" id="laps"></ol>
+  <!-- 타이머: 분 : 초 다이얼 + 칩(그 시간으로 맞춤) -->
+  <section class="pane" id="cdsetup" hidden>
+    <div class="wheels">
+      <div class="band"></div>
+      <div class="wcolw"><div class="wcol" id="wcm" tabindex="0" data-i18n-aria="minuteLabel"></div></div>
+      <span class="wsep">:</span>
+      <div class="wcolw"><div class="wcol" id="wcs" tabindex="0" data-i18n-aria="secondLabel"></div></div>
+    </div>
+    <div class="chips" id="cdchips">
+      <button class="chip" data-c="60"></button>
+      <button class="chip" data-c="300"></button>
+      <button class="chip" data-c="600"></button>
+      <button class="chip" data-c="1500"></button>
+      <button class="chip" data-c="3600"></button>
+    </div>
+    <button class="go" id="cdgo" data-i18n="start"></button>
   </section>
 
   <section class="pane" id="set" hidden>

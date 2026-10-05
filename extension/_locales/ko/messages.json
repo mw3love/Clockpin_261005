@@ -3,7 +3,7 @@
     "message": "Clockpin"
   },
   "extDesc": {
-    "message": "툴바에서 다이얼로 끝나는 시각을 골라 그때 딱 알려 주는 알람. 빠른 타이머와 스톱워치도 함께."
+    "message": "툴바에서 다이얼로 끝나는 시각을 골라 그때 딱 알려 주는 알람. 거꾸로 세는 타이머도 함께."
   },
   "lang": {
     "message": "ko"
@@ -19,9 +19,6 @@
   },
   "tabAlarm": {
     "message": "알람"
-  },
-  "tabStopwatch": {
-    "message": "스톱워치"
   },
   "settings": {
     "message": "설정"
@@ -80,21 +77,6 @@
   "timesUpBang": {
     "message": "시간 됐어요!"
   },
-  "swStop": {
-    "message": "정지"
-  },
-  "swResume": {
-    "message": "계속"
-  },
-  "lap": {
-    "message": "랩"
-  },
-  "lapN": {
-    "message": "랩 $1"
-  },
-  "reset": {
-    "message": "초기화"
-  },
   "appearance": {
     "message": "화면 색"
   },
@@ -140,15 +122,6 @@
   "menuTimer": {
     "message": "$1 타이머"
   },
-  "menuSwStart": {
-    "message": "스톱워치 시작"
-  },
-  "menuSwPause": {
-    "message": "스톱워치 멈추기"
-  },
-  "menuSwResume": {
-    "message": "스톱워치 계속"
-  },
   "menuStop": {
     "message": "지금 타이머 끄기"
   },
@@ -166,5 +139,26 @@
   },
   "addMin": {
     "message": "+$1분"
+  },
+  "tabTimer": {
+    "message": "타이머"
+  },
+  "secondLabel": {
+    "message": "초"
+  },
+  "pause": {
+    "message": "일시정지"
+  },
+  "resume": {
+    "message": "계속"
+  },
+  "pausedNow": {
+    "message": "일시정지됨"
+  },
+  "endsAt": {
+    "message": "<b>$1</b>에 끝"
+  },
+  "notifCd": {
+    "message": "$1 타이머가 끝났어요"
   }
 }

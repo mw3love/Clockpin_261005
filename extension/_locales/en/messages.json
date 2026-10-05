@@ -3,7 +3,7 @@
     "message": "Clockpin"
   },
   "extDesc": {
-    "message": "Pick the exact time on a dial and get alerted right then — from your toolbar. Quick timers and a stopwatch too."
+    "message": "Pick the exact time on a dial and get alerted right then — from your toolbar. A countdown timer too."
   },
   "lang": {
     "message": "en"
@@ -19,9 +19,6 @@
   },
   "tabAlarm": {
     "message": "Alarm"
-  },
-  "tabStopwatch": {
-    "message": "Stopwatch"
   },
   "settings": {
     "message": "Settings"
@@ -80,21 +77,6 @@
   "timesUpBang": {
     "message": "Time's up!"
   },
-  "swStop": {
-    "message": "Stop"
-  },
-  "swResume": {
-    "message": "Resume"
-  },
-  "lap": {
-    "message": "Lap"
-  },
-  "lapN": {
-    "message": "Lap $1"
-  },
-  "reset": {
-    "message": "Reset"
-  },
   "appearance": {
     "message": "Appearance"
   },
@@ -140,15 +122,6 @@
   "menuTimer": {
     "message": "$1 timer"
   },
-  "menuSwStart": {
-    "message": "Start stopwatch"
-  },
-  "menuSwPause": {
-    "message": "Pause stopwatch"
-  },
-  "menuSwResume": {
-    "message": "Resume stopwatch"
-  },
   "menuStop": {
     "message": "Stop timer"
   },
@@ -166,5 +139,26 @@
   },
   "addMin": {
     "message": "+$1 min"
+  },
+  "tabTimer": {
+    "message": "Timer"
+  },
+  "secondLabel": {
+    "message": "Second"
+  },
+  "pause": {
+    "message": "Pause"
+  },
+  "resume": {
+    "message": "Resume"
+  },
+  "pausedNow": {
+    "message": "Paused"
+  },
+  "endsAt": {
+    "message": "Ends at <b>$1</b>"
+  },
+  "notifCd": {
+    "message": "Your $1 timer is done"
   }
 }

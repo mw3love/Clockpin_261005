@@ -3,19 +3,19 @@
 @font-face { font-family: "Jua"; src: url("fonts/jua-subset.woff2") format("woff2"); font-display: block; }
 :root {
   --bg: #DDEBE5; --ink: #1E3A33; --muted: #56706A; --line: #C9DDD5; --surf: #EEF5F2;
-  --coral: #EE6553; --done: #D63F33; --sh: rgba(30, 58, 51, .08); --stripe: rgba(255, 255, 255, .45);
+  --coral: #EE6553; --done: #D63F33; --sh: rgba(30, 58, 51, .08);
   --round: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #1B1C1E; --ink: #E6E8E7; --muted: #9CA19F; --line: #2C2E31; --surf: #26282B;
-    --coral: #FF7C69; --done: #FF6B5E; --sh: rgba(0, 0, 0, .4); --stripe: rgba(255, 255, 255, .04); color-scheme: dark;
+    --coral: #FF7C69; --done: #FF6B5E; --sh: rgba(0, 0, 0, .4); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #1B1C1E; --ink: #E6E8E7; --muted: #9CA19F; --line: #2C2E31; --surf: #26282B;
-  --coral: #FF7C69; --done: #FF6B5E; --sh: rgba(0, 0, 0, .4); --stripe: rgba(255, 255, 255, .04); color-scheme: dark;
+  --coral: #FF7C69; --done: #FF6B5E; --sh: rgba(0, 0, 0, .4); color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }

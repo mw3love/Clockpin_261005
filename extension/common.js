@@ -40,7 +40,7 @@ function badgeText(ms) {
 }
 
 const DEFAULTS = { presets: [5, 10, 25, 60], alertWindow: true, sound: true };
-const EMPTY_SW = { acc: 0, start: 0, on: false, laps: [] };
+const DEFAULT_CD = 300;   // 타이머 탭을 처음 열 때 시간(초)
 
 async function getSettings() {
   const { settings } = await chrome.storage.local.get('settings');

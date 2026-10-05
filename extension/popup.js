@@ -4,7 +4,7 @@ const IH = 46;                        // 다이얼 한 칸 높이(px)
 const RC = 2 * Math.PI * 80;          // 링 둘레
 const send = m => chrome.runtime.sendMessage(m);
 
-let timer = null, sw = { ...EMPTY_SW }, tab = 'timer', settingsOpen = false;
+let timer = null, tab = 'at', settingsOpen = false;   // tab: 'at'(알람) | 'cd'(타이머)
 
 localize();
 document.querySelectorAll('[data-p]').forEach(b => {
@@ -85,7 +85,8 @@ function makeWheel(el, items, onChange) {
     if (e.key === 'ArrowUp') { e.preventDefault(); move(idx - 1); }
     if (e.key === 'ArrowDown') { e.preventDefault(); move(idx + 1); }
   });
-  return { get: () => idx, set: (i, smooth) => { idx = clamp(i); go(idx, smooth); } };
+  // refresh: 숨어 있던 다이얼은 스크롤이 안 먹으므로, 보일 때 제자리로 다시 맞춘다
+  return { get: () => idx, set: (i, smooth) => { idx = clamp(i); go(idx, smooth); }, refresh: () => go(idx) };
 }
 
 const touch = () => { touched = true; renderEndline(); };
@@ -141,8 +142,32 @@ function start() {
   if (touched) send({ cmd: 'startAt', endAt: wheelTarget().d.getTime() });
 }
 $('go').onclick = start;
+
+/* ---------- 타이머 탭: 분 : 초 다이얼 ----------
+   칩은 그 시간으로 맞춘다(더하지 않음). 마지막에 시작한 시간(lastCd)을 기억했다가 다음에 그대로 보여 준다 */
+const cdSecs = () => wCm.get() * 60 + wCs.get();
+const renderCdGo = () => { $('cdgo').disabled = cdSecs() === 0; };
+const wCm = makeWheel($('wcm'), Array.from({ length: 100 }, (_, i) => pad(i)), renderCdGo);
+const wCs = makeWheel($('wcs'), Array.from({ length: 60 }, (_, i) => pad(i)), renderCdGo);
+function setCd(secs, smooth) {
+  wCm.set(Math.min(99, Math.floor(secs / 60)), smooth);
+  wCs.set(secs % 60, smooth);
+  renderCdGo();
+}
+document.querySelectorAll('[data-c]').forEach(b => { b.textContent = durText(+b.dataset.c); });
+$('cdchips').addEventListener('click', e => {
+  const b = e.target.closest('[data-c]');
+  if (b) setCd(+b.dataset.c, true);
+});
+function startCd() {
+  if (cdSecs() > 0) send({ cmd: 'start', secs: cdSecs() });
+}
+$('cdgo').onclick = startCd;
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !settingsOpen && tab === 'timer' && !timer && !e.target.closest('button, input')) { e.preventDefault(); start(); }
+  if (e.key !== 'Enter' || settingsOpen || timer || e.target.closest('button, input')) return;
+  e.preventDefault();
+  tab === 'cd' ? startCd() : start();
 });
 
 /* ---------- 탭 ---------- */
@@ -150,17 +175,25 @@ document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b
 $('opts').onclick = () => { settingsOpen = true; renderPanes(); };
 $('back').onclick = () => { settingsOpen = false; renderPanes(); };
 
+// 지금 도는 타이머가 어느 탭 것인지. 예전 버전이 저장한 타이머(mode 없음)는 알람
+const timerTab = () => timer && (timer.mode === 'cd' ? 'cd' : 'at');
+
 function renderPanes() {
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
-  const main = !settingsOpen, setup = main && tab === 'timer' && !timer;
+  const main = !settingsOpen, running = main && timerTab() === tab;
+  const setupAt = main && tab === 'at' && !running, setupCd = main && tab === 'cd' && !running;
+  const wasHidden = { at: $('setup').hidden, cd: $('cdsetup').hidden };
   $('head').hidden = !main;
   $('sethead').hidden = $('set').hidden = main;
-  $('setup').hidden = !setup;
-  $('run').hidden = !(main && tab === 'timer' && timer);
-  $('sw').hidden = !(main && tab === 'sw');
-  // 설정 화면에서는 다이얼이 곧 지금 시각이라 위쪽 시계는 숨긴다
-  document.querySelector('.now').style.visibility = setup ? 'hidden' : '';
+  $('setup').hidden = !setupAt;
+  $('cdsetup').hidden = !setupCd;
+  $('run').hidden = !running;
+  if (setupAt && wasHidden.at) [wAp, wH, wM].forEach(w => w.refresh());
+  if (setupCd && wasHidden.cd) [wCm, wCs].forEach(w => w.refresh());
+  // 알람 다이얼은 곧 지금 시각이고, 타이머 탭은 지금 시각이 필요 없어서 위쪽 시계를 숨긴다
+  document.querySelector('.now').style.visibility = setupAt || tab === 'cd' ? 'hidden' : '';
   document.body.classList.toggle('done', timer?.status === 'done');
+  document.body.classList.toggle('paused', timer?.status === 'paused');
   renderButtons();
 }
 
@@ -174,16 +207,23 @@ function setBtn(id, label, msg, primary) {
 function renderButtons() {
   if (!timer) return;
   const done = timer.status === 'done';
+  const cd = timerTab() === 'cd';
   if (done) {
     setBtn('ba', t('moreMin', 1), { cmd: 'snooze', secs: 60 });
     setBtn('bb', t('moreMin', 5), { cmd: 'snooze', secs: 300 });
     setBtn('bc', t('dismiss'), { cmd: 'dismiss' }, true);
+  } else if (cd) {
+    // 타이머: 일시정지/계속 · +1분 · +5분
+    const paused = timer.status === 'paused';
+    setBtn('ba', t(paused ? 'resume' : 'pause'), { cmd: paused ? 'resume' : 'pause' }, paused);
+    setBtn('bb', t('addMin', 1), { cmd: 'add', secs: 60 });
+    setBtn('bc', t('addMin', 5), { cmd: 'add', secs: 300 });
   } else {
     setBtn('ba', t('addMin', 1), { cmd: 'add', secs: 60 });
     setBtn('bb', t('addMin', 5), { cmd: 'add', secs: 300 });
   }
   // 진행 중 취소는 작은 아이콘(↶), 끝났을 때 끄기는 글자 버튼
-  $('bc').hidden = !done;
+  $('bc').hidden = !done && !cd;
   $('gap').hidden = $('bx').hidden = done;
 }
 $('bx').onclick = () => send({ cmd: 'cancel' });
@@ -191,27 +231,19 @@ $('pg').setAttribute('stroke-dasharray', RC);
 
 function renderRun() {
   if (!timer) return;
-  const rem = timer.status === 'running' ? Math.max(0, timer.endAt - Date.now()) : 0;
+  const rem = timer.status === 'running' ? Math.max(0, timer.endAt - Date.now()) : timer.status === 'paused' ? timer.remaining : 0;
   const end = new Date(timer.endAt);
+  $('pg').setAttribute('stroke-dashoffset', RC * (1 - rem / (timer.total * 1000)));
+  if (timerTab() === 'cd') {
+    // 타이머: 남은 시간을 크게, 아래에 끝나는 시각(멈췄으면 「일시정지」)
+    $('ampm').textContent = '';
+    $('left').textContent = fmtDur(rem / 1000);
+    $('sub').innerHTML = timer.status === 'done' ? t('timesUp') : timer.status === 'paused' ? t('pausedNow') : t('endsAt', fmtClock(end));
+    return;
+  }
   $('ampm').textContent = apText(end);
   $('left').textContent = `${end.getHours() % 12 || 12}:${pad(end.getMinutes())}`;
-  $('pg').setAttribute('stroke-dashoffset', RC * (1 - rem / (timer.total * 1000)));
   $('sub').innerHTML = timer.status === 'done' ? t('timesUp') : t('left', fmtDur(rem / 1000));
-}
-
-/* ---------- 스톱워치(S1) ---------- */
-const swNow = () => sw.acc + (sw.on ? Date.now() - sw.start : 0);
-const fmtMs = ms => fmtDur(Math.floor(ms / 1000)) + '.' + Math.floor(ms % 1000 / 100);
-$('swgo').onclick = () => send({ cmd: 'swToggle' });
-$('swlap').onclick = () => send({ cmd: 'swLap' });
-$('swreset').onclick = () => send({ cmd: 'swReset' });
-function renderSw() {
-  const ms = swNow();
-  $('swt').innerHTML = fmtDur(Math.floor(ms / 1000)) + '<small>.' + Math.floor(ms % 1000 / 100) + '</small>';
-}
-function renderSwStatic() {
-  $('swgo').textContent = t(sw.on ? 'swStop' : sw.acc ? 'swResume' : 'start');
-  $('laps').innerHTML = sw.laps.map((ms, i) => `<li><span>${t('lapN', i + 1)}</span><span>${fmtMs(ms)}</span></li>`).reverse().join('');
 }
 
 /* ---------- 설정(팝업 안) ----------
@@ -252,27 +284,30 @@ $('test').onclick = () => {
 
 /* ---------- 상태 읽기 ---------- */
 async function reload() {
-  const st = await chrome.storage.local.get(['timer', 'sw']);
+  const st = await chrome.storage.local.get(['timer', 'lastCd']);
   const hadTimer = !!timer;
   timer = st.timer || null;
-  sw = st.sw || { ...EMPTY_SW };
-  // 타이머가 끝나 설정 화면으로 돌아오면 다이얼을 다시 지금 시각에 둔다
-  if (hadTimer && !timer) { touched = false; requestAnimationFrame(() => setWheels(new Date())); }
-  renderPanes(); renderRun(); renderSwStatic(); renderSw(); renderEndline();
+  // 타이머가 끝나 설정 화면으로 돌아오면 알람 다이얼은 지금 시각, 타이머 다이얼은 마지막 시간으로
+  if (hadTimer && !timer) {
+    touched = false;
+    requestAnimationFrame(() => { setWheels(new Date()); setCd(st.lastCd || DEFAULT_CD); });
+  }
+  renderPanes(); renderRun(); renderEndline();
 }
-chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && (c.timer || c.sw)) reload(); });
+chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && c.timer) reload(); });
 
 function tick() {
   $('clock').textContent = fmtClock(new Date(), true);
   if (timer) renderRun(); else renderEndline();
-  if (sw.on) renderSw();
 }
 
 (async () => {
   await reload();
-  if (!timer && sw.on) { tab = 'sw'; renderPanes(); }
+  // 도는 타이머가 있으면 그 탭으로 연다
+  if (timer) { tab = timerTab(); renderPanes(); }
+  const { lastCd } = await chrome.storage.local.get('lastCd');
   // 팝업을 연 순간의 시각을 한 번만 보여 준다(계속 따라가지 않음)
-  requestAnimationFrame(() => setWheels(new Date()));
+  requestAnimationFrame(() => { setWheels(new Date()); setCd(lastCd || DEFAULT_CD); });
   tick();
   setInterval(tick, 200);
 })();
