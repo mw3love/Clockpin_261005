@@ -143,14 +143,17 @@ function start() {
 }
 $('go').onclick = start;
 
-/* ---------- 타이머 탭: 분 : 초 다이얼 ----------
+/* ---------- 타이머 탭: 시 : 분 : 초 다이얼 ----------
    칩은 그 시간으로 맞춘다(더하지 않음). 마지막에 시작한 시간(lastCd)을 기억했다가 다음에 그대로 보여 준다 */
-const cdSecs = () => wCm.get() * 60 + wCs.get();
+const cdSecs = () => wCh.get() * 3600 + wCm.get() * 60 + wCs.get();
 const renderCdGo = () => { $('cdgo').disabled = cdSecs() === 0; };
-const wCm = makeWheel($('wcm'), Array.from({ length: 100 }, (_, i) => pad(i)), renderCdGo);
-const wCs = makeWheel($('wcs'), Array.from({ length: 60 }, (_, i) => pad(i)), renderCdGo);
+const sixty = Array.from({ length: 60 }, (_, i) => pad(i));
+const wCh = makeWheel($('wch'), Array.from({ length: 24 }, (_, i) => pad(i)), renderCdGo);
+const wCm = makeWheel($('wcm'), sixty, renderCdGo);
+const wCs = makeWheel($('wcs'), sixty, renderCdGo);
 function setCd(secs, smooth) {
-  wCm.set(Math.min(99, Math.floor(secs / 60)), smooth);
+  wCh.set(Math.min(23, Math.floor(secs / 3600)), smooth);
+  wCm.set(Math.floor(secs % 3600 / 60), smooth);
   wCs.set(secs % 60, smooth);
   renderCdGo();
 }
@@ -189,9 +192,7 @@ function renderPanes() {
   $('cdsetup').hidden = !setupCd;
   $('run').hidden = !running;
   if (setupAt && wasHidden.at) [wAp, wH, wM].forEach(w => w.refresh());
-  if (setupCd && wasHidden.cd) [wCm, wCs].forEach(w => w.refresh());
-  // 알람 다이얼은 곧 지금 시각이고, 타이머 탭은 지금 시각이 필요 없어서 위쪽 시계를 숨긴다
-  document.querySelector('.now').style.visibility = setupAt || tab === 'cd' ? 'hidden' : '';
+  if (setupCd && wasHidden.cd) [wCh, wCm, wCs].forEach(w => w.refresh());
   document.body.classList.toggle('done', timer?.status === 'done');
   document.body.classList.toggle('paused', timer?.status === 'paused');
   renderButtons();
@@ -297,7 +298,6 @@ async function reload() {
 chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && c.timer) reload(); });
 
 function tick() {
-  $('clock').textContent = fmtClock(new Date(), true);
   if (timer) renderRun(); else renderEndline();
 }
 

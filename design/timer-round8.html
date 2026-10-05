@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Clockpin 8차 시안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Jua&display=swap">
+<style>
+/* 구성: 배치 A~D(알람·타이머 탭을 나란히) → 탭 아이콘 → 골라 주실 것. 팝업 목업은 실제 크기 320px */
+:root{
+  --bg:#F1F4F3; --ink:#16201D; --muted:#5F6B68; --line:#DCE3E0; --card:#FFFFFF; --rec:#1E7A5E; --rec-soft:#DDF1E9;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --m-round:"Jua","IBM Plex Sans KR",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1412;--ink:#E9EFEC;--muted:#97A39F;--line:#28312E;--card:#171D1B;--rec:#6FD3AE;--rec-soft:#1B3029;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55;padding:40px 16px 64px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+.intro{max-width:72ch;display:flex;flex-direction:column;gap:8px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+h1{font-size:28px;line-height:1.25;margin:0;font-weight:700}
+.intro p{margin:0;color:var(--muted)}
+.intro p b{color:var(--ink)}
+.sec{display:flex;flex-direction:column;gap:18px}
+.sec-h{display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.sec-h h2{margin:0;font-size:20px;font-weight:700;display:flex;gap:10px;align-items:baseline}
+.sec-h h2 .k{font-family:var(--f-num);font-size:13px;color:var(--muted);font-weight:600}
+.sec-h p{margin:0;color:var(--muted)}
+.mt{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--muted)}
+.mt button{all:unset;cursor:pointer;font-size:12.5px;color:var(--ink);border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 12px}
+.mt button[aria-pressed="true"]{border-color:var(--rec);color:var(--rec);background:var(--rec-soft);font-weight:600}
+button:focus-visible{outline:2px solid var(--rec);outline-offset:2px}
+.layouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,680px),1fr));gap:48px 32px}
+.opt{display:flex;flex-direction:column;gap:12px;min-width:0}
+.opt h3{margin:0;font-size:16px;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.opt h3 .tag{font-family:var(--f-num);font-size:13px;color:var(--muted);font-weight:600}
+.rec{font-size:11px;font-weight:600;color:var(--rec);background:var(--rec-soft);padding:1px 8px;border-radius:99px}
+.opt p{margin:0;font-size:13px;color:var(--muted);max-width:600px}
+.opt p b{color:var(--ink);font-weight:600}
+.pair{display:flex;gap:16px;flex-wrap:wrap}
+.cap{font-size:12px;color:var(--muted);margin-bottom:6px}
+
+/* ---------- 목업 팔레트(실제 확장의 ui.css 값) ---------- */
+.m{--m-bg:#DDEBE5;--m-ink:#1E3A33;--m-muted:#56706A;--m-line:#C9DDD5;--m-surf:#EEF5F2;--m-coral:#EE6553;--m-sh:rgba(30,58,51,.08);--m-pop-sh:rgba(30,58,51,.16);
+  background:var(--m-bg);color:var(--m-ink);font-family:var(--f-body)}
+.m[data-mt="dark"]{--m-bg:#1B1C1E;--m-ink:#E6E8E7;--m-muted:#9CA19F;--m-line:#2C2E31;--m-surf:#26282B;--m-coral:#FF7C69;--m-sh:rgba(0,0,0,.4);--m-pop-sh:rgba(0,0,0,.55);color-scheme:dark}
+.pop{width:320px;max-width:100%;border-radius:4px;box-shadow:0 14px 34px var(--m-pop-sh);padding:14px;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;justify-content:flex-end;align-items:center;gap:6px;min-height:28px}
+.seg{display:flex;background:var(--m-surf);border-radius:16px;padding:2px}
+.seg span{font-size:12px;padding:4px 10px;border-radius:14px;color:var(--m-muted);display:flex;align-items:center;gap:4px;cursor:pointer}
+.seg span.on{background:var(--m-ink);color:var(--m-bg)}
+.seg svg{width:15px;height:15px;flex:none}
+.seg.io span{padding:4px 9px}
+.seg.io svg{width:17px;height:17px}
+.gear{width:26px;height:26px;display:grid;place-items:center;color:var(--m-muted)}
+.gear svg{width:17px;height:17px}
+.go{all:unset;cursor:pointer;text-align:center;background:var(--m-coral);color:#fff;font-weight:600;border-radius:14px;padding:13px 0;font-size:16px;box-shadow:0 6px 14px rgba(255,111,91,.3)}
+.go:hover{filter:brightness(1.05)}
+.go:active{transform:translateY(1px);box-shadow:0 3px 8px rgba(255,111,91,.3)}
+.go[disabled]{opacity:.35;cursor:not-allowed;box-shadow:none;filter:none;transform:none}
+.at{font-size:12.5px;color:var(--m-muted);text-align:center;min-height:19px}
+.at b{color:var(--m-ink);font-family:var(--m-round);font-weight:400;font-size:14px}
+
+/* 다이얼 */
+.wheels{position:relative;display:flex;justify-content:center;align-items:center;gap:2px;padding-top:4px}
+.band{position:absolute;left:4px;right:4px;top:96px;height:46px;background:var(--m-surf);border-radius:16px;box-shadow:0 4px 12px var(--m-sh);pointer-events:none}
+.wcol{width:70px;height:230px;padding-block:92px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;z-index:1;
+  -webkit-mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask-image:linear-gradient(transparent,#000 28%,#000 72%,transparent)}
+.wcol::-webkit-scrollbar{display:none}
+.wcol div{height:46px;line-height:46px;text-align:center;scroll-snap-align:center;font-family:var(--m-round);font-size:32px;cursor:ns-resize}
+.wcol div.on{color:var(--m-coral)}
+.wcol.ap div{font-size:20px}
+.wcol.n3{width:62px}
+.wsep{font-family:var(--m-round);font-size:26px;color:var(--m-muted);z-index:1}
+
+/* 칩 */
+.chips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.chip{all:unset;cursor:pointer;text-align:center;font-size:12.5px;padding:5px 0;border-radius:99px;background:var(--m-surf);box-shadow:0 2px 6px var(--m-sh);white-space:nowrap}
+.chip:hover{color:var(--m-coral)}
+.chip:active{transform:translateY(1px)}
+/* D: 칩이 곧 시작 버튼 — 조금 크게, 재생 표시 */
+.chips.big .chip{padding:8px 0;font-size:13px;border-radius:12px;display:flex;justify-content:center;align-items:center;gap:3px}
+.chips.big .chip i{font-style:normal;font-size:12px;color:var(--m-coral)}
+.hint{font-size:11.5px;color:var(--m-muted);text-align:center;margin-top:-4px}
+
+/* 아이콘 섹션 */
+.icons{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:28px}
+.big2{display:flex;gap:18px;align-items:center}
+.big2 figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--muted)}
+.big2 svg{width:56px;height:56px;color:var(--ink)}
+.strip{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px}
+.strip .ph{justify-content:flex-start}
+
+.pick{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:8px;max-width:760px}
+.pick h2{margin:0;font-size:18px}
+.pick ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.pick li b{font-family:var(--f-num)}
+.pick p{margin:0;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* ---------- 8차: 탭 위치 ---------- */
+.layouts{grid-template-columns:1fr}
+.trio{display:flex;gap:16px;flex-wrap:wrap}
+.trio{align-items:flex-start}
+.grow{flex:1;min-height:0}
+/* 아래 줄: 탭 + (시작) + 톱니 */
+.bar{display:flex;align-items:center;gap:8px}
+.bar .go{flex:1}
+.bar .seg{flex:none}
+.bar.full .seg{flex:1}
+.bar.full .seg span{flex:1;justify-content:center;padding:7px 0;font-size:12.5px}
+.bar.tall .seg{border-radius:14px;padding:3px;align-self:stretch}
+.bar.tall .seg span{border-radius:11px;padding:0 10px}
+.bar.tall.io .seg span{padding:0 11px}
+.bar.tall.io .seg svg{width:19px;height:19px}
+.topgear{display:flex;justify-content:flex-end;min-height:0}
+/* 진행 화면 */
+.ring{position:relative;width:190px;height:190px;margin:4px auto 0}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .tr{fill:none;stroke:var(--m-surf);stroke-width:12}
+.ring .pg{fill:none;stroke:var(--m-coral);stroke-width:12;stroke-linecap:round}
+.ring .mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ring .left{font-family:var(--m-round);font-size:46px;line-height:1}
+.ring .sub{font-size:12px;color:var(--m-muted)}
+.ring .sub b{font-family:var(--m-round);font-weight:400;font-size:15px;color:var(--m-ink)}
+.row{display:flex;gap:8px}
+.b{all:unset;cursor:pointer;flex:1;text-align:center;padding:10px 0;border-radius:14px;background:var(--m-surf);font-size:13.5px;color:var(--m-ink)}
+.b:hover{box-shadow:0 0 0 2px var(--m-line) inset}
+.ib{all:unset;cursor:pointer;flex:0 0 42px;height:42px;border-radius:50%;background:var(--m-surf);color:var(--m-muted);display:grid;place-items:center}
+.ib svg{width:18px;height:18px}
+.prev{font-size:12px;color:var(--muted);margin:-4px 0 0}
+.prev b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <span class="eyebrow">CLOCKPIN · 8차 시안</span>
+    <h1>알람·타이머 탭을 어디에 둘까</h1>
+    <p>지난 시안에서 고른 <b>B(칩을 맨 위로)</b>는 모든 안에 그대로 두고, <b>탭 버튼 위치만</b> 바꿨어요.
+      탭을 아래로 내리면 진행 화면에서도 탭이 어디 있는지가 중요해서, 안마다 <b>알람 설정 · 타이머 설정 · 타이머 진행</b> 세 화면을 나란히 그렸어요.
+      모두 실제 크기(폭 320px)이고, 높이도 실제 팝업처럼 내용만큼이에요. 탭은 눌러서 바꿔 볼 수 있어요.</p>
+  </header>
+
+  <section class="sec">
+    <div class="sec-h"><h2><span class="k">T1–T4</span>탭 위치</h2>
+      <p>아이콘은 7차의 「가」(자명종 + 모래시계)로 통일했어요. 톱니(설정)는 탭과 같은 줄에 따라가요.</p></div>
+    <div class="layouts" id="layouts"></div>
+  </section>
+
+  <section class="pick">
+    <h2>골라 주실 것</h2>
+    <ul>
+      <li>탭 위치: <b>T1</b> / <b>T2</b> / <b>T3</b> / <b>T4</b></li>
+      <li>아이콘(7차): 가 / 나 / 다, 그리고 I1(아이콘+글자) / I2(아이콘만). T4는 줄이 좁아 I2만 돼요.</li>
+    </ul>
+    <p>제 추천: <b>T3</b>. 이유는 그 안 설명에 적었어요.</p>
+  </section>
+</div>
+
+<script>
+const IC = {"alarm": "<path d=\"M216,136a88,88,0,1,1-88-88A88,88,0,0,1,216,136Z\" opacity=\"0.2\"/><path d=\"M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM61.66,37.66l-32,32A8,8,0,0,1,18.34,58.34l32-32A8,8,0,0,1,61.66,37.66Zm176,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32l32,32A8,8,0,0,1,237.66,69.66ZM184,128a8,8,0,0,1,0,16H128a8,8,0,0,1-8-8V80a8,8,0,0,1,16,0v48Z\"/>", "bell-ringing": "<path d=\"M208,192H48a8,8,0,0,1-6.88-12C47.71,168.6,56,147.81,56,112a72,72,0,0,1,144,0c0,35.82,8.3,56.6,14.9,68A8,8,0,0,1,208,192Z\" opacity=\"0.2\"/><path d=\"M224,71.1a8,8,0,0,1-10.78-3.42,94.13,94.13,0,0,0-33.46-36.91,8,8,0,1,1,8.54-13.54,111.46,111.46,0,0,1,39.12,43.09A8,8,0,0,1,224,71.1ZM35.71,72a8,8,0,0,0,7.1-4.32A94.13,94.13,0,0,1,76.27,30.77a8,8,0,1,0-8.54-13.54A111.46,111.46,0,0,0,28.61,60.32,8,8,0,0,0,35.71,72Zm186.1,103.94A16,16,0,0,1,208,200H167.2a40,40,0,0,1-78.4,0H48a16,16,0,0,1-13.79-24.06C43.22,160.39,48,138.28,48,112a80,80,0,0,1,160,0C208,138.27,212.78,160.38,221.81,175.94ZM150.62,200H105.38a24,24,0,0,0,45.24,0ZM208,184c-10.64-18.27-16-42.49-16-72a64,64,0,0,0-128,0c0,29.52-5.38,53.74-16,72Z\"/>", "hourglass-medium": "<path d=\"M180.92,88,128,128,74.67,88Z\" opacity=\"0.2\"/><path d=\"M200,75.64V40a16,16,0,0,0-16-16H72A16,16,0,0,0,56,40V76a16.07,16.07,0,0,0,6.4,12.8L114.67,128,62.4,167.2A16.07,16.07,0,0,0,56,180v36a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V180.36a16.09,16.09,0,0,0-6.35-12.77L141.27,128l52.38-39.59A16.09,16.09,0,0,0,200,75.64ZM72,40H184V75.64L178.23,80H77.33L72,76Zm56,78L98.67,96h58.4Zm56,98H72V180l48-36v24a8,8,0,0,0,16,0V144.08l48,36.28Z\"/>", "timer": "<path d=\"M216,136a88,88,0,1,1-88-88A88,88,0,0,1,216,136Z\" opacity=\"0.2\"/><path d=\"M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z\"/>", "clock-countdown": "<path d=\"M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z\" opacity=\"0.2\"/><path d=\"M232,136.66A104.12,104.12,0,1,1,119.34,24,8,8,0,0,1,120.66,40,88.12,88.12,0,1,0,216,135.34,8,8,0,0,1,232,136.66ZM120,72v56a8,8,0,0,0,8,8h56a8,8,0,0,0,0-16H136V72a8,8,0,0,0-16,0Zm40-24a12,12,0,1,0-12-12A12,12,0,0,0,160,48Zm36,24a12,12,0,1,0-12-12A12,12,0,0,0,196,72Zm24,36a12,12,0,1,0-12-12A12,12,0,0,0,220,108Z\"/>"};
+const svg = n => `<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${IC[n]}</svg>`;
+const GEAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9.87 5.02 L10.48 2.42 L13.52 2.42 L14.13 5.02 L15.43 5.55 L17.70 4.15 L19.85 6.30 L18.45 8.57 L18.98 9.87 L21.58 10.48 L21.58 13.52 L18.98 14.13 L18.45 15.43 L19.85 17.70 L17.70 19.85 L15.43 18.45 L14.13 18.98 L13.52 21.58 L10.48 21.58 L9.87 18.98 L8.57 18.45 L6.30 19.85 L4.15 17.70 L5.55 15.43 L5.02 14.13 L2.42 13.52 L2.42 10.48 L5.02 9.87 L5.55 8.57 L4.15 6.30 L6.30 4.15 L8.57 5.55Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const UNDO = `<svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const pad = n => String(n).padStart(2, '0');
+
+const seg = (active, io) => {
+  const one = (key, ic, label) => `<span class="${active === key ? 'on' : ''}" title="${label}">${svg(ic)}${io ? '' : label}</span>`;
+  return `<div class="seg${io ? ' io' : ''}">${one('at', 'alarm', '알람')}${one('cd', 'hourglass-medium', '타이머')}</div>`;
+};
+const gear = `<span class="gear">${GEAR}</span>`;
+
+const col = (items, sel, cls = '') => `<div class="wcol ${cls}" data-sel="${sel}">${items.map(v => `<div>${v}</div>`).join('')}</div>`;
+const dialAt = () => `<div class="wheels"><div class="band"></div>${col(['오전', '오후'], 0, 'ap')}${col(Array.from({ length: 12 }, (_, i) => i + 1), 10)}<span class="wsep">:</span>${col(Array.from({ length: 60 }, (_, i) => pad(i)), 43)}</div>`;
+const dialCd = () => `<div class="wheels"><div class="band"></div>${col(Array.from({ length: 24 }, (_, i) => pad(i)), 0, 'n3')}<span class="wsep">:</span>${col(Array.from({ length: 60 }, (_, i) => pad(i)), 5, 'n3')}<span class="wsep">:</span>${col(Array.from({ length: 60 }, (_, i) => pad(i)), 0, 'n3')}</div>`;
+const CH = [60, 300, 600, 1500, 3600];
+const lab = (s, plus) => (plus ? '+' : '') + (s >= 3600 ? s / 3600 + '시간' : s / 60 + '분');
+const chips = kind => `<div class="chips">${CH.map(s => `<button class="chip" data-kind="${kind}" data-s="${s}">${lab(s, kind === 'at')}</button>`).join('')}</div>`;
+const go = () => `<button class="go">시작</button>`;
+const endline = '<div class="at"><b>5분 후</b> 알림</div>';
+const RC = 2 * Math.PI * 80;
+const ring = () => `<div class="ring"><svg viewBox="0 0 190 190"><circle class="tr" cx="95" cy="95" r="80"/><circle class="pg" cx="95" cy="95" r="80" stroke-dasharray="${RC}" stroke-dashoffset="${RC * 0.02}"/></svg><div class="mid"><div class="left">04:54</div><div class="sub"><b>오전 11:53</b>에 끝</div></div></div>`;
+const runRow = () => `<div class="row"><button class="b">일시정지</button><button class="b">+1분</button><button class="b">+5분</button><span style="flex:0 0 6px"></span><button class="ib">${UNDO}</button></div>`;
+const grow = '<div class="grow"></div>';
+
+// 화면 종류: at(알람 설정) / cd(타이머 설정) / run(타이머 진행)
+const L = {
+  T1: { title: '탭은 맨 위(7차 B 그대로)',
+    note: '맨 위 탭 → 칩 → 다이얼 → 시작. 익숙한 앱 모양이에요. 대신 칩이 탭 아래로 한 줄 밀려요.',
+    body: (k, a) => [`<header class="ph">${seg(a)}${gear}</header>`,
+      ...(k === 'run' ? [ring(), runRow()] : k === 'at' ? [chips('at'), dialAt(), endline, grow, go()] : [chips('cd'), dialCd(), grow, go()])] },
+  T2: { title: '탭은 맨 아래 따로 한 줄',
+    note: '칩 → 다이얼 → 시작 → 탭. 칩이 팝업 맨 위로 올라가요. 탭은 휴대폰 앱의 아래 메뉴처럼 폭을 꽉 채워요. 대신 줄이 하나 더 생겨 팝업이 가장 길어요.',
+    body: (k, a) => [...(k === 'run' ? [ring(), runRow()] : k === 'at' ? [chips('at'), dialAt(), endline, go()] : [chips('cd'), dialCd(), go()]),
+      grow, `<div class="bar full">${seg(a)}${gear}</div>`] },
+  T3: { title: '탭을 시작 버튼과 같은 줄에', rec: true,
+    note: '칩 → 다이얼 → [탭 | 시작 | 톱니]. <b>추천.</b> 칩이 맨 위로 가고 줄 수도 늘지 않아요. 시작 버튼은 조금 좁아지지만 여전히 가장 큰 버튼이에요. 진행 화면에서는 시작 자리에 버튼 넷이 와서 탭이 들어갈 자리가 없으니, 탭과 톱니만 아래 줄로 내려가요(오른쪽 화면).',
+    body: (k, a) => k === 'run'
+      ? [ring(), runRow(), grow, `<div class="bar">${seg(a)}<span class="grow"></span>${gear}</div>`]
+      : [...(k === 'at' ? [chips('at'), dialAt(), endline] : [chips('cd'), dialCd()]), grow, `<div class="bar tall">${seg(a)}${go()}${gear}</div>`] },
+  T4: { title: '같은 줄 + 아이콘만',
+    note: 'T3와 같은데 탭을 아이콘만으로 줄였어요. 시작 버튼이 넓어지고 가장 깔끔해요. 대신 처음 쓰는 사람은 아이콘 뜻을 알아야 해요(마우스를 올리면 이름이 나와요).',
+    body: (k, a) => k === 'run'
+      ? [ring(), runRow(), grow, `<div class="bar io">${seg(a, true)}<span class="grow"></span>${gear}</div>`]
+      : [...(k === 'at' ? [chips('at'), dialAt(), endline] : [chips('cd'), dialCd()]), grow, `<div class="bar tall io">${seg(a, true)}${go()}${gear}</div>`] },
+};
+
+const CAP = { at: '알람 설정', cd: '타이머 설정', run: '타이머 진행' };
+function popup(k, id, mt) {
+  const active = k === 'at' ? 'at' : 'cd';
+  return `<div><div class="cap">${CAP[k]}</div><div class="m pop" data-mt="${mt}">${L[id].body(k, active).join('')}</div></div>`;
+}
+document.getElementById('layouts').innerHTML = Object.entries(L).map(([id, o]) => `
+  <article class="opt">
+    <h3><span class="tag">${id}</span>${o.title}${o.rec ? '<span class="rec">추천</span>' : ''}</h3>
+    <p>${o.note}</p>
+    <div class="mt">목업 색 <button aria-pressed="true" data-mt="dark">어둡게</button><button aria-pressed="false" data-mt="light">밝게</button></div>
+    <div class="trio">${['at', 'cd', 'run'].map(k => popup(k, id, 'dark')).join('')}</div>
+  </article>`).join('');
+
+function setCol(c, i, smooth) { c.scrollTo({ top: i * 46, behavior: smooth ? 'smooth' : 'auto' }); mark(c, i); }
+function mark(c, i) { [...c.children].forEach((d, j) => d.classList.toggle('on', j === i)); c.dataset.sel = i; }
+requestAnimationFrame(() => document.querySelectorAll('.wcol').forEach(c => {
+  setCol(c, +c.dataset.sel);
+  c.addEventListener('scroll', () => mark(c, Math.round(c.scrollTop / 46)), { passive: true });
+}));
+
+document.addEventListener('click', e => {
+  const mtb = e.target.closest('.mt button');
+  if (mtb) {
+    const opt = mtb.closest('.opt');
+    opt.querySelectorAll('.mt button').forEach(b => b.setAttribute('aria-pressed', b === mtb));
+    opt.querySelectorAll('.pop').forEach(p => p.dataset.mt = mtb.dataset.mt);
+    return;
+  }
+  const chip = e.target.closest('.chip');
+  if (chip) {
+    const pop = chip.closest('.pop'), s = +chip.dataset.s;
+    if (chip.dataset.kind === 'cd') {
+      const [h, m, x] = pop.querySelectorAll('.wcol');
+      setCol(h, Math.floor(s / 3600), true); setCol(m, Math.floor(s % 3600 / 60), true); setCol(x, s % 60, true);
+    } else {
+      const d = new Date(Date.now() + s * 1000), [ap, h, m] = pop.querySelectorAll('.wcol');
+      setCol(ap, d.getHours() < 12 ? 0 : 1, true); setCol(h, (d.getHours() % 12 || 12) - 1, true); setCol(m, d.getMinutes(), true);
+      const at = pop.querySelector('.at'); if (at) at.innerHTML = `<b>${lab(s)} 후</b> 알림`;
+    }
+    return;
+  }
+  const tab = e.target.closest('.seg span');
+  if (tab) tab.parentElement.querySelectorAll('span').forEach(s => s.classList.toggle('on', s === tab));
+});
+</script>
+</body>
+</html>
