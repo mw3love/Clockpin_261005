@@ -3,23 +3,23 @@ import os, subprocess, pathlib
 from PIL import Image
 
 S = pathlib.Path(__file__).parent
-STORE = pathlib.Path(r'C:/Users/7make/Dev/Clockpin_261005/store')
+STORE = S.parent
 CHROME = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
-ICON = pathlib.Path(r'C:/Users/7make/Dev/Clockpin_261005/extension/icons/icon128.png')
+ICON = S.parent.parent / 'extension' / 'icons' / 'icon128.png'
 
 CAP = {
     'en': [('Pick the exact time', 'Spin the dial to when you want the alarm — or tap +5m, +10m, +1h.'),
            ('Count down, too', 'Hours, minutes and seconds. Clockpin remembers the last time you used.'),
            ('Pause, add, cancel', 'A big countdown ring, with +1 min and +5 min a click away.'),
-           ('Know when it ends', 'Alarms show the exact end time and how much is left.'),
+           ('Stopwatch with laps', 'Runs alongside your timer. Each lap shows its split and the total.'),
            ("Hard to miss", 'A sound, a notification and a small window when time is up. Snooze in one click.')],
     'ko': [('끝나는 시각을 바로 고르기', '다이얼을 돌려 알람 시각을 맞추거나 +5분, +10분, +1시간을 누르세요.'),
            ('거꾸로 세는 타이머도', '시·분·초로 맞추고, 마지막에 쓴 시간을 기억해요.'),
            ('일시정지, 1분 더, 취소', '남은 시간이 링에 크게 보이고, +1분·+5분은 클릭 한 번이에요.'),
-           ('언제 끝나는지 한눈에', '알람은 끝나는 시각과 남은 시간을 함께 보여 줘요.'),
+           ('랩까지 재는 스톱워치', '타이머와 따로 돌아요. 랩마다 구간 시간과 누적 시간이 보여요.'),
            ('시간이 되면 확실하게', '알림음, 알림, 작은 창으로 알려 줘요. 「5분 더」도 한 번에.')],
 }
-RAW = ['1-alarm', '2-timer', '3-timer-run', '4-alarm-run', '5-alert']
+RAW = ['1-alarm', '2-timer', '3-timer-run', '4-stopwatch', '5-alert']
 
 PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@500;700&display=block">

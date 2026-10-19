@@ -78,11 +78,12 @@ async def main():
             await asyncio.sleep(3)
             await theme(sid, 'dark')
             await shot(sid, '3-timer-run', 320)
-            # 4 알람 진행(밝게): 42분 뒤 정각 분
-            await ev(sid, "chrome.runtime.sendMessage({cmd:'startAt', endAt: Math.floor(Date.now()/60000)*60000 + 42*60000}).then(()=>1)")
-            await asyncio.sleep(1.5)
+            # 4 스톱워치(밝게): 12분 34초째, 랩 3개
+            await ev(sid, "chrome.storage.local.set({sw:{acc:0,start:Date.now()-754300,on:true,laps:[183400,371900,562100]}}).then(()=>1)")
+            await ev(sid, "chrome.runtime.sendMessage({cmd:'add', secs:0}).then(()=>1)")
             await theme(sid, 'light')
-            await shot(sid, '4-alarm-run', 320)
+            await ev(sid, "document.querySelector('[data-tab=sw]').click(); 1")
+            await shot(sid, '4-stopwatch', 320)
             # 5 시간 됐을 때 알림 창(어둡게)
             await ev(sid, "chrome.runtime.sendMessage({cmd:'start', secs:2}).then(()=>1)")
             await asyncio.sleep(4)

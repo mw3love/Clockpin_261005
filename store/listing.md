@@ -1,6 +1,6 @@
 # Clockpin — 웹스토어 등록 자료
 
-2026-10-05 버전 0.1.0을 검토 제출했다(사용자가 실제 크롬에서 동작 확인 후). 다음 버전은 `manifest.json`의 `version`을 올리고 zip을 다시 만든다.
+2026-10-05 버전 0.1.0을 검토 제출했다(사용자가 실제 크롬에서 동작 확인 후). 2026-10-19 0.2.0(스톱워치 탭, 배지 초 단위) 자료를 준비했다 — 대시보드 제출은 사용자가 한다. 다음 버전도 `manifest.json`의 `version`을 올리고 zip을 다시 만든다. 이전 버전이 아직 심사 중이면 대시보드에서 「검토 취소」 후 새 패키지를 올린다.
 
 개발자 대시보드에 그대로 붙여 넣을 내용이다. 영어가 기본 언어이고, 한국어는 대시보드의 「언어 추가」로 넣는다.
 
@@ -10,11 +10,11 @@
 - 스크린샷 1280×800 5장: `store/screenshots/en/1~5.png`, 한국어판 `store/screenshots/ko/1~5.png`
 - 작은 홍보 타일 440×280(필수): `store/promo-small-440x280.png`. 홍보 이미지는 언어별로 못 나누므로 영어로 만들었다.
 - 큰 홍보 타일 1400×560: 선택 사항이라 만들지 않았다.
-- 제출용 zip: `store/clockpin-0.1.0.zip` (`extension/` 내용, `manifest.json`이 맨 위). `.gitignore`가 `*.zip`을 무시하므로 git에는 안 올라간다.
+- 제출용 zip: `store/clockpin-0.2.0.zip` (`extension/` 내용, `manifest.json`이 맨 위). `.gitignore`가 `*.zip`을 무시하므로 git에는 안 올라간다.
 
 스크린샷을 다시 찍을 때: `python store/tools/shots.py <확장 폴더> store/tools/raw_ko`(영어는 `_locales/ko`를 지운 사본으로 `raw_en`), 이어서 `python store/tools/compose.py`. 크롬 실행 파일 경로와 파이썬 `websockets`·`Pillow`가 필요하다.
 
-스크린샷 순서: 1 알람 다이얼 · 2 타이머 다이얼 · 3 타이머 진행 · 4 알람 진행 · 5 시간이 됐을 때 알림 창.
+스크린샷 순서: 1 알람 다이얼 · 2 타이머 다이얼 · 3 타이머 진행 · 4 스톱워치(랩) · 5 시간이 됐을 때 알림 창.
 
 ## 스토어 등록정보
 
@@ -23,13 +23,13 @@
 
 ### 요약(manifest에서 자동으로 들어감, 132자 이내)
 
-- en(100자): Pick the exact time on a dial and get alerted right then — from your toolbar. A countdown timer too.
-- ko: 툴바에서 다이얼로 끝나는 시각을 골라 그때 딱 알려 주는 알람. 거꾸로 세는 타이머도 함께.
+- en(114자): Pick the exact time on a dial and get alerted right then — from your toolbar. A countdown timer and stopwatch too.
+- ko: 툴바에서 다이얼로 끝나는 시각을 골라 그때 딱 알려 주는 알람. 거꾸로 세는 타이머와 스톱워치도 함께.
 
 ### 자세한 설명 — English
 
 ```
-Clockpin is an alarm and countdown timer that lives in your toolbar. Spin a dial to the exact time you want to be reminded, or set a countdown — and get a clear alert when time is up.
+Clockpin is an alarm, countdown timer and stopwatch that lives in your toolbar. Spin a dial to the exact time you want to be reminded, or set a countdown — and get a clear alert when time is up.
 
 Alarm
 • Spin the dial to the time you want (hour, minute, AM/PM), or tap +1m, +5m, +10m, +25m or +1h.
@@ -40,12 +40,16 @@ Timer
 • Pause and resume, or add 1 or 5 minutes while it runs.
 • Clockpin remembers the last time you used, so a 25-minute timer is one click away next time.
 
+Stopwatch
+• Start, stop, resume and reset. Laps show each split and the running total.
+• Runs alongside an alarm or timer, and keeps going when the popup is closed.
+
 When time is up
 • A sound, a desktop notification and a small alert window (each can be turned off).
 • Snooze for 1 or 5 more minutes, or dismiss, in one click.
 
 Also
-• The toolbar badge shows the time left (for example 24m, then 45s).
+• The toolbar badge shows the time left (for example 24m, then 9:59 in the last 10 minutes).
 • Right-click the toolbar icon to start a preset timer (5, 10, 25, 60 minutes by default — change them in Settings).
 • Light and dark themes, or follow your computer.
 • English and Korean.
@@ -56,7 +60,7 @@ Privacy: Clockpin does not collect, send or share any data. Your timer and setti
 ### 자세한 설명 — 한국어
 
 ```
-Clockpin은 툴바에 있는 알람·타이머예요. 다이얼을 돌려 알려 줄 시각을 딱 고르거나, 거꾸로 세는 타이머를 맞추면 시간이 됐을 때 확실하게 알려 줘요.
+Clockpin은 툴바에 있는 알람·타이머·스톱워치예요. 다이얼을 돌려 알려 줄 시각을 딱 고르거나, 거꾸로 세는 타이머를 맞추면 시간이 됐을 때 확실하게 알려 줘요.
 
 알람
 • 다이얼로 시각(오전/오후·시·분)을 고르거나 +1분, +5분, +10분, +25분, +1시간을 누르세요.
@@ -67,12 +71,16 @@ Clockpin은 툴바에 있는 알람·타이머예요. 다이얼을 돌려 알려
 • 일시정지·계속, 도는 중에 +1분·+5분.
 • 마지막에 쓴 시간을 기억해서, 25분 타이머는 다음에도 클릭 한 번이에요.
 
+스톱워치
+• 시작·정지·계속·초기화. 랩마다 구간 시간과 누적 시간이 보여요.
+• 알람·타이머와 따로 돌고, 팝업을 닫아도 계속 재요.
+
 시간이 됐을 때
 • 알림음, 바탕화면 알림, 작은 알림 창으로 알려 줘요(각각 끌 수 있어요).
 • 「1분 더」「5분 더」「끄기」를 한 번에.
 
 그 밖에
-• 툴바 아이콘 위에 남은 시간이 보여요(예: 24m, 45s).
+• 툴바 아이콘 위에 남은 시간이 보여요(예: 24m, 남은 10분부터는 9:59).
 • 툴바 아이콘을 우클릭하면 정해 둔 시간(기본 5·10·25·60분)으로 바로 타이머를 시작해요. 시간은 설정에서 바꿀 수 있어요.
 • 밝게·어둡게, 또는 컴퓨터 설정 따라가기.
 • 영어·한국어 화면.
@@ -85,7 +93,7 @@ Clockpin은 툴바에 있는 알람·타이머예요. 다이얼을 돌려 알려
 ### 단일 목적(Single purpose)
 
 ```
-Clockpin is an alarm and countdown timer: the user sets a time or duration in the toolbar popup and is alerted when it is up.
+Clockpin is a toolbar time tool — an alarm, a countdown timer and a stopwatch: the user sets a time or duration in the toolbar popup and is alerted when it is up, or measures elapsed time.
 ```
 
 ### 권한 사용 이유(Permission justification)
@@ -94,7 +102,7 @@ Clockpin is an alarm and countdown timer: the user sets a time or duration in th
 |---|---|
 | `alarms` | Schedules the moment an alarm or timer ends, so the alert fires even when the popup is closed. |
 | `notifications` | Shows a desktop notification with Snooze and Dismiss buttons when time is up. |
-| `storage` | Saves the running timer, the last timer length and the user's settings locally in the browser. |
+| `storage` | Saves the running timer and stopwatch, the last timer length and the user's settings locally in the browser. |
 | `contextMenus` | Adds preset timers (5, 10, 25, 60 minutes) and Stop to the toolbar icon's right-click menu. |
 | `offscreen` | Plays the alarm sound when time is up; a service worker cannot play audio by itself. |
 
