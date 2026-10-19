@@ -29,10 +29,11 @@ function durText(sec) {
   return p.join(' ') || t('durS', 0);
 }
 
-// 아이콘 위 글자(B1): 24m / 1h5 / 45s — 4글자 이내
+// 아이콘 위 글자(B1): 24m / 1h5 / 남은 10분 안쪽은 9:59·0:45 — 4글자 이내
+const clockText = s => `${Math.floor(s / 60)}:${pad(s % 60)}`;
 function badgeText(ms) {
   const s = Math.ceil(ms / 1000);
-  if (s < 60) return s + 's';
+  if (s < 600) return clockText(s);
   const m = Math.ceil(s / 60);
   if (m < 60) return m + 'm';
   const h = Math.floor(m / 60), r = m % 60;

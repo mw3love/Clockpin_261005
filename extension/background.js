@@ -7,6 +7,12 @@ importScripts('common.js');
 
 const COLORS = { running: '#FF6F5B', done: '#E2463A', paused: '#56706A', sw: '#1E3A33' };
 let secTimer = null, endTimer = null, tickTimer = null, finishing = false;
+const SEC_MS = 600000;   // 이 시간 안쪽(남은 10분, 스톱워치는 처음 10분)은 배지를 매초 바꾼다
+
+// 배지 글자가 바뀌는 순간(phase ms 뒤)에 맞춰 매초 배지를 바꾼다. 이 호출이 백그라운드를 깨어 있게 한다
+function everySecond(phase) {
+  secTimer = setTimeout(() => { secTimer = setInterval(updateBadge, 1000); updateBadge(); }, phase + 20);
+}
 
 async function load() {
   const { timer = null, sw = null } = await chrome.storage.local.get(['timer', 'sw']);
@@ -15,7 +21,7 @@ async function load() {
 
 // 상태가 바뀔 때마다 부른다: 알람·배지·메뉴를 상태에 맞춘다
 async function sync() {
-  clearInterval(secTimer); clearTimeout(endTimer); clearTimeout(tickTimer);
+  clearTimeout(secTimer); clearInterval(secTimer); clearTimeout(endTimer); clearTimeout(tickTimer);
   secTimer = endTimer = tickTimer = null;
   await chrome.alarms.clearAll();
   const { timer, sw } = await load();
@@ -25,11 +31,14 @@ async function sync() {
     if (rem <= 0) return finish();
     // 정식 배포판은 30초 미만 알람을 지키지 않으므로, 끝 알람은 예비용이다
     chrome.alarms.create('done', { when: timer.endAt });
-    if (rem <= 61000) {
-      // 마지막 1분: 매초 배지를 바꾼다. 이 호출이 백그라운드를 깨어 있게 한다
-      secTimer = setInterval(updateBadge, 1000);
+    if (rem <= SEC_MS + 1000) {
+      // 마지막 10분: 매초 배지를 바꾸고, 끝도 여기서 직접 잰다
+      everySecond(rem % 1000);
       endTimer = setTimeout(finish, rem);
     }
+  } else if (!timer && sw.on) {
+    const el = swMs(sw, now);
+    if (el < SEC_MS) everySecond(1000 - el % 1000);
   }
   await updateBadge();
   await updateMenu();
@@ -41,17 +50,18 @@ function scheduleTick(timer, sw, now) {
   let next;
   if (timer?.status === 'running') {
     const rem = timer.endAt - now;
-    if (rem <= 61000) return;
+    if (rem <= SEC_MS + 1000) return;
     next = rem % 60000 || 60000;
   } else if (!timer && sw.on) {
-    // 배지가 스톱워치를 보여 줄 때: 1분마다 오른다
-    next = 60000 - swMs(sw, now) % 60000;
+    // 배지가 스톱워치를 보여 줄 때: 10분까지는 10분이 되는 순간에, 그 뒤로는 1분마다
+    const el = swMs(sw, now);
+    next = el < SEC_MS ? SEC_MS - el : 60000 - el % 60000;
   } else return;
   chrome.alarms.create('tick', { when: now + next + 50 });
   if (next < 30000) tickTimer = setTimeout(sync, next + 50);
 }
 
-// 배지는 알람·타이머가 먼저. 없을 때만 도는 스톱워치의 지난 시간(12m / 1h5)
+// 배지는 알람·타이머가 먼저. 없을 때만 도는 스톱워치의 지난 시간(3:07 / 12m / 1h5)
 async function updateBadge() {
   const { timer, sw } = await load();
   const now = Date.now();
@@ -61,8 +71,8 @@ async function updateBadge() {
     else if (timer.status === 'paused') { text = badgeText(timer.remaining); color = COLORS.paused; }
     else { text = t('badgeDone'); color = COLORS.done; }
   } else if (sw.on) {
-    const m = Math.floor(swMs(sw, now) / 60000);
-    text = m < 60 ? m + 'm' : Math.floor(m / 60) + 'h' + (m % 60 || '');
+    const s = Math.floor(swMs(sw, now) / 1000), m = Math.floor(s / 60);
+    text = s < SEC_MS / 1000 ? clockText(s) : m < 60 ? m + 'm' : Math.floor(m / 60) + 'h' + (m % 60 || '');
     color = COLORS.sw;
   }
   await chrome.action.setBadgeText({ text });
