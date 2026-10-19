@@ -157,5 +157,20 @@
   },
   "notifCd": {
     "message": "$1 타이머가 끝났어요"
+  },
+  "tabSw": {
+    "message": "스톱워치"
+  },
+  "swStop": {
+    "message": "정지"
+  },
+  "reset": {
+    "message": "초기화"
+  },
+  "lap": {
+    "message": "랩"
+  },
+  "lapN": {
+    "message": "랩 $1"
   }
 }

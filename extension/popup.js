@@ -4,7 +4,7 @@ const IH = 46;                        // 다이얼 한 칸 높이(px)
 const RC = 2 * Math.PI * 80;          // 링 둘레
 const send = m => chrome.runtime.sendMessage(m);
 
-let timer = null, tab = 'at', settingsOpen = false;   // tab: 'at'(알람) | 'cd'(타이머)
+let timer = null, sw = { ...EMPTY_SW }, tab = 'at', settingsOpen = false;   // tab: 'at'(알람) | 'cd'(타이머) | 'sw'(스톱워치)
 
 localize();
 document.querySelectorAll('[data-p]').forEach(b => {
@@ -168,7 +168,9 @@ function startCd() {
 $('cdgo').onclick = startCd;
 
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter' || settingsOpen || timer || e.target.closest('button, input')) return;
+  if (e.key !== 'Enter' || settingsOpen || e.target.closest('button, input')) return;
+  if (tab === 'sw') { e.preventDefault(); send({ cmd: 'swToggle' }); return; }
+  if (timer) return;
   e.preventDefault();
   tab === 'cd' ? startCd() : start();
 });
@@ -191,6 +193,7 @@ function renderPanes() {
   $('setup').hidden = !setupAt;
   $('cdsetup').hidden = !setupCd;
   $('run').hidden = !running;
+  $('sw').hidden = !(main && tab === 'sw');
   if (setupAt && wasHidden.at) [wAp, wH, wM].forEach(w => w.refresh());
   if (setupCd && wasHidden.cd) [wCh, wCm, wCs].forEach(w => w.refresh());
   document.body.classList.toggle('done', timer?.status === 'done');
@@ -247,6 +250,37 @@ function renderRun() {
   $('sub').innerHTML = timer.status === 'done' ? t('timesUp') : t('left', fmtDur(rem / 1000));
 }
 
+/* ---------- 스톱워치 ----------
+   기준은 백그라운드가 저장한 sw(acc·start). 화면은 0.1초까지 자주 다시 그린다 */
+const fmtSw = (ms, small) => {
+  const d = Math.floor(ms % 1000 / 100);
+  return fmtDur(Math.floor(ms / 1000)) + (small ? `<small>.${d}</small>` : `.${d}`);
+};
+$('swgo').onclick = () => send({ cmd: 'swToggle' });
+$('swb').onclick = () => send({ cmd: sw.on ? 'swLap' : 'swReset' });
+function renderSw() {
+  const ms = swMs(sw);
+  $('swt').innerHTML = fmtSw(ms, true);
+  $('swt').classList.toggle('long', ms >= 3600000);
+  $('swpg').setAttribute('stroke-dashoffset', RC * (1 - ms % 60000 / 60000));
+  // 랩을 찍었으면 지금 구간 시간을 아래에
+  const last = sw.laps[sw.laps.length - 1];
+  $('swsub').innerHTML = sw.laps.length ? `${t('lapN', sw.laps.length + 1)} <b>${fmtSw(ms - last)}</b>` : !sw.on && ms ? t('pausedNow') : '';
+}
+function renderSwStatic() {
+  const ms = swMs(sw);
+  $('swgo').textContent = t(sw.on ? 'swStop' : ms ? 'resume' : 'start');
+  $('swb').textContent = t(sw.on || !ms ? 'lap' : 'reset');
+  $('swb').disabled = !ms;
+  $('sw').classList.toggle('stopped', !sw.on);
+  // 최근 랩이 위로: 랩 번호 · 구간 · 누적
+  $('laps').innerHTML = sw.laps.map((v, i) =>
+    `<li><span>${t('lapN', i + 1)}</span><span>${fmtSw(v - (sw.laps[i - 1] || 0))}</span><span>${fmtSw(v)}</span></li>`).reverse().join('');
+  $('laps').hidden = !sw.laps.length;
+  renderSw();
+}
+$('swpg').setAttribute('stroke-dasharray', RC);
+
 /* ---------- 설정(팝업 안) ----------
    바꾸는 즉시 저장한다. 메뉴 시간이 바뀌면 백그라운드가 우클릭 메뉴를 다시 만든다.
    화면 색은 팝업이 열리자마자 칠할 수 있게 localStorage에 둔다(common.js의 readTheme). */
@@ -285,17 +319,18 @@ $('test').onclick = () => {
 
 /* ---------- 상태 읽기 ---------- */
 async function reload() {
-  const st = await chrome.storage.local.get(['timer', 'lastCd']);
+  const st = await chrome.storage.local.get(['timer', 'lastCd', 'sw']);
   const hadTimer = !!timer;
   timer = st.timer || null;
+  sw = st.sw || { ...EMPTY_SW };
   // 타이머가 끝나 설정 화면으로 돌아오면 알람 다이얼은 지금 시각, 타이머 다이얼은 마지막 시간으로
   if (hadTimer && !timer) {
     touched = false;
     requestAnimationFrame(() => { setWheels(new Date()); setCd(st.lastCd || DEFAULT_CD); });
   }
-  renderPanes(); renderRun(); renderEndline();
+  renderPanes(); renderRun(); renderEndline(); renderSwStatic();
 }
-chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && c.timer) reload(); });
+chrome.storage.onChanged.addListener((c, area) => { if (area === 'local' && (c.timer || c.sw)) reload(); });
 
 function tick() {
   if (timer) renderRun(); else renderEndline();
@@ -303,11 +338,13 @@ function tick() {
 
 (async () => {
   await reload();
-  // 도는 타이머가 있으면 그 탭으로 연다
+  // 도는 타이머가 있으면 그 탭으로, 없고 스톱워치가 돌면 스톱워치 탭으로 연다
   if (timer) { tab = timerTab(); renderPanes(); }
+  else if (sw.on) { tab = 'sw'; renderPanes(); }
   const { lastCd } = await chrome.storage.local.get('lastCd');
   // 팝업을 연 순간의 시각을 한 번만 보여 준다(계속 따라가지 않음)
   requestAnimationFrame(() => { setWheels(new Date()); setCd(lastCd || DEFAULT_CD); });
   tick();
   setInterval(tick, 200);
+  setInterval(() => { if (sw.on && !$('sw').hidden) renderSw(); }, 50);
 })();

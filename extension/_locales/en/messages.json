@@ -157,5 +157,20 @@
   },
   "notifCd": {
     "message": "Your $1 timer is done"
+  },
+  "tabSw": {
+    "message": "Stopwatch"
+  },
+  "swStop": {
+    "message": "Stop"
+  },
+  "reset": {
+    "message": "Reset"
+  },
+  "lap": {
+    "message": "Lap"
+  },
+  "lapN": {
+    "message": "Lap $1"
   }
 }

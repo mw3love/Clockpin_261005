@@ -2,14 +2,15 @@
 // 상태(chrome.storage.local)
 //   timer:  { mode: 'at'(알람)|'cd'(타이머), total(초), status: 'running'|'paused'|'done', endAt(ms), remaining(멈췄을 때 남은 ms), doneAt }
 //   lastCd: 타이머 탭에서 마지막으로 시작한 시간(초)
+//   sw:     스톱워치 { acc(멈추기 전까지 잰 ms), start(ms), on, laps: [누적 ms] }. 알람·타이머와 따로 돈다
 importScripts('common.js');
 
-const COLORS = { running: '#FF6F5B', done: '#E2463A', paused: '#56706A' };
+const COLORS = { running: '#FF6F5B', done: '#E2463A', paused: '#56706A', sw: '#1E3A33' };
 let secTimer = null, endTimer = null, tickTimer = null, finishing = false;
 
 async function load() {
-  const { timer = null } = await chrome.storage.local.get('timer');
-  return { timer };
+  const { timer = null, sw = null } = await chrome.storage.local.get(['timer', 'sw']);
+  return { timer, sw: sw || { ...EMPTY_SW } };
 }
 
 // 상태가 바뀔 때마다 부른다: 알람·배지·메뉴를 상태에 맞춘다
@@ -17,7 +18,7 @@ async function sync() {
   clearInterval(secTimer); clearTimeout(endTimer); clearTimeout(tickTimer);
   secTimer = endTimer = tickTimer = null;
   await chrome.alarms.clearAll();
-  const { timer } = await load();
+  const { timer, sw } = await load();
   const now = Date.now();
   if (timer && timer.status === 'running') {
     const rem = timer.endAt - now;
@@ -32,27 +33,37 @@ async function sync() {
   }
   await updateBadge();
   await updateMenu();
-  scheduleTick(timer, now);
+  scheduleTick(timer, sw, now);
 }
 
 // 배지 글자가 다음에 바뀌는 순간에 다시 깨어난다
-function scheduleTick(timer, now) {
-  if (!timer || timer.status !== 'running') return;
-  const rem = timer.endAt - now;
-  if (rem <= 61000) return;
-  const next = rem % 60000 || 60000;
+function scheduleTick(timer, sw, now) {
+  let next;
+  if (timer?.status === 'running') {
+    const rem = timer.endAt - now;
+    if (rem <= 61000) return;
+    next = rem % 60000 || 60000;
+  } else if (!timer && sw.on) {
+    // 배지가 스톱워치를 보여 줄 때: 1분마다 오른다
+    next = 60000 - swMs(sw, now) % 60000;
+  } else return;
   chrome.alarms.create('tick', { when: now + next + 50 });
   if (next < 30000) tickTimer = setTimeout(sync, next + 50);
 }
 
+// 배지는 알람·타이머가 먼저. 없을 때만 도는 스톱워치의 지난 시간(12m / 1h5)
 async function updateBadge() {
-  const { timer } = await load();
+  const { timer, sw } = await load();
   const now = Date.now();
   let text = '', color = COLORS.running;
   if (timer) {
     if (timer.status === 'running') text = badgeText(timer.endAt - now);
     else if (timer.status === 'paused') { text = badgeText(timer.remaining); color = COLORS.paused; }
     else { text = t('badgeDone'); color = COLORS.done; }
+  } else if (sw.on) {
+    const m = Math.floor(swMs(sw, now) / 60000);
+    text = m < 60 ? m + 'm' : Math.floor(m / 60) + 'h' + (m % 60 || '');
+    color = COLORS.sw;
   }
   await chrome.action.setBadgeText({ text });
   await chrome.action.setBadgeBackgroundColor({ color });
@@ -123,7 +134,7 @@ async function stopAlerts() {
 
 /* ---------- 명령 처리 ---------- */
 async function handle(m) {
-  const { timer } = await load();
+  const { timer, sw } = await load();
   const now = Date.now();
   const startTimer = (secs, mode) => ({ mode, total: secs, endAt: now + secs * 1000, status: 'running' });
   switch (m.cmd) {
@@ -162,6 +173,16 @@ async function handle(m) {
     case 'dismiss':
       await stopAlerts();
       await chrome.storage.local.remove('timer');
+      break;
+    // 스톱워치: 시작/정지/계속은 한 버튼, 랩은 그때까지의 누적 시간을 쌓는다
+    case 'swToggle':
+      await chrome.storage.local.set({ sw: sw.on ? { ...sw, on: false, acc: swMs(sw, now) } : { ...sw, on: true, start: now } });
+      break;
+    case 'swLap':
+      if (sw.on) await chrome.storage.local.set({ sw: { ...sw, laps: [...sw.laps, swMs(sw, now)] } });
+      break;
+    case 'swReset':
+      await chrome.storage.local.set({ sw: { ...EMPTY_SW } });
       break;
   }
   await sync();
@@ -225,6 +246,5 @@ chrome.storage.onChanged.addListener((changes, area) => {
   const a = changes.settings.oldValue?.presets, b = changes.settings.newValue?.presets;
   if (JSON.stringify(a) !== JSON.stringify(b)) buildMenus();
 });
-// 예전 버전의 스톱워치 기록(sw)은 지운다
-chrome.runtime.onInstalled.addListener(() => { chrome.storage.local.remove('sw'); buildMenus(); sync(); });
+chrome.runtime.onInstalled.addListener(() => { buildMenus(); sync(); });
 chrome.runtime.onStartup.addListener(() => { buildMenus(); sync(); });
